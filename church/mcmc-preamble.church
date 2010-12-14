@@ -164,7 +164,7 @@
 ;;this is the code for psmc (population sequential monte carlo). this is particle filtering with an mcmc rejuvenation kernel and (eventually) a crossover move.
 ;;the sugarred call looks like (psmc-query temp-args temps popsize kernel-iterations ...defs... q-exp c-exp).
 (define (psmc-query temps popsize lag temps->nfqp)
-  (smc-core temps popsize lag temps->nfqp))
+  (map mcmc-state->query-value (smc-core temps popsize lag temps->nfqp)))
  
 ;;this does the smc without finalizing, so that we can either get the query values or the scores (etc).
 (define (smc-core temps popsize lag temps->nfqp)

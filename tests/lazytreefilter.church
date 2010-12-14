@@ -78,25 +78,25 @@
 ;; (pretty-print (lazy-list->list obs 6))
 
 
-;; (psmc-query (depth) (map list (iota 20))
-;;             10
-;;             0
+(psmc-query (depth) (map list (iota 20))
+            10
+            0
 
-;;             (define (color)
-;;               (if (flip) 'a 'b))
+            (define (color)
+              (if (flip) 'a 'b))
             
-;;             (define tree
-;;               (lazify
-;;               (lambda ()
-;;                 (if (flip)
-;;                     (color) 
-;;                     (lazy-list (color) (tree) (tree))))))
+            (define tree
+              (lazify
+              (lambda ()
+                (if (flip)
+                    (color) 
+                    (lazy-list (color) (tree) (tree))))))
 
-;;             (define t (tree))
+            (define t (tree))
             
-;;             (first (lazy-list->list t depth))
+            (first (lazy-list->list t depth))
 
-;;             (lazy-equal? t obs depth))
+            (lazy-equal? t obs depth))
 
 
 

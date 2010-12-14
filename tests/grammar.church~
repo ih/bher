@@ -1,0 +1,16 @@
+(define (terminal t) (lambda () t))
+
+(define EXPR
+  (lambda ()
+    (sample (multinomial (list IF BOOL) (list 1/4 3/4)))))
+(define IF
+  (lambda ()
+    ;;(list 'if (EXPR) (EXPR) (EXPR))))
+    (lazy-list 'if (EXPR) (EXPR) (EXPR))))
+(define BOOL
+  (lambda ()
+    (sample  (uniform-draw (list (terminal 't) (terminal 'f))))))
+
+(define program (first (lazy-list->list lazy-program MAX-DEPTH)))
+
+(pretty-print program)

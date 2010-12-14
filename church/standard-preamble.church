@@ -293,6 +293,8 @@
       (+ 1 (apply max (map depth tree)))))
 
 
+
+
 ;; @desc
 ;; Compute the mean of a list of numbers.
 ;; @param lst The list. 
@@ -325,3 +327,38 @@
 ;;FIXME!! implement no-proposals or singleton constraint detection to deprecate it...
 (define (no-proposals x) (begin (display "warning: no-proposals not implemented.\n")
                                 x))
+
+;;lazy functions
+(define (lazy-pair a b) (lambda (tag) (if (eq? tag 'first) a (if (eq? tag 'rest) b 'lazy-pair))))
+(define (lazy-pair? a) (if (procedure? a) (eq? 'lazy-pair (a 'type?)) false))
+
+(define lazy-list (lambda args (if (pair? args) (lazy-pair (first args) (apply lazy-list (rest args))) args)))
+
+;;returns false if finds missmatch, otherwise returns amount of sexprs matched.
+(define (seq-sexpr-equal? t1 t2 depth)
+  (if (= depth 0)
+      0
+      (if (and (lazy-pair? t1) (lazy-pair? t2))
+          (let ((left (seq-sexpr-equal? (t1 'first) (t2 'first) (- depth 1))))
+            (if (eq? false left)
+                false
+                (seq-sexpr-equal? (t1 'rest) (t2 'rest) left)))
+          (if (eq? t1 t2)
+              (- depth 1)
+              false))))
+(define (lazy-equal? a b depth) (not (eq? false (seq-sexpr-equal? a b depth))))
+
+
+(define (lazy-list->list a depth)
+  (if (= 0 depth)
+      (pair 'unf 0)
+      (if (lazy-pair? a)
+          (let* ((left (lazy-list->list (a 'first) (- depth 1)))
+                 (right (lazy-list->list (a 'rest) (rest left))))
+            (pair (pair (first left) (first right)) (rest right)))
+          (pair a (- depth 1)))))
+
+(define (range a b)
+  (if (= a b)
+      (list b)
+      (pair a (range (+ a 1) b))))

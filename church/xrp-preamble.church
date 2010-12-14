@@ -3,19 +3,29 @@
 ;;this is the church xrp-preamble, that creates all standard xrps. some primitive pieces (samplers, scorers) are added in the scheme header.
 
 ;; (define (grammar-xrp grammar)
-;;   (let* ([scorer (lambda (args program)
-;;                    (smc-core ]
+;;   (let* ([scorer (make-scorer grammar)]
 ;;          [proposer abstraction-proposer])
-;;     (with-proposer grammar scorer proposer)))
-       
+;;     (make-stateless-xrp
+;;      "grammar-xrp"
+;;      grammar
+;;      scorer
+;;      proposer))) ;;needs proposal support?
 
-;; ;;needs proposal support?
-;; (define (with-proposer thunk scorer proposer)
-;;   (make-stateless-xrp 
-;;    "with-proposer-xrp"
-;;    (lambda (x) (thunk)) ;;sampler
-;;    scorer
-;;    proposer))
+;;creates a function that takes a program and returns the probability of generating the program from the grammar
+
+(define (make-scorer grammar)
+  (lambda (args program)
+    (let* ([temps-nfqp (make-temps-nfqp program grammar)]
+           [depths (map list (iota 20))];;FIXME change smc-core to run without a list of temps
+           [states (smc-core depths 10 20 temps-nfqp)]
+           ;;all particles should be equal, make sure throw error if they are not
+           [score (mcmc-state->score (uniform-draw states))])
+      score)))
+
+(define (make-temps-nfqp target-program grammar)
+  (lambda (temp)
+;;    (lambda () (pair (lazy-equal? (grammar) target-program temp) (lambda () 'error)))))
+    (lambda () (begin (define p (grammar)) (pair (lazy-equal? p target-program temp) (lambda () (first (lazy-list->list p temp))))))))
 
 
 ;;for constructing 'erp-like' xrps that don't have any hyperparams or stats.
