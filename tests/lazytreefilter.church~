@@ -1,0 +1,82 @@
+(define (lazy-pair a b) (lambda (tag) (if (eq? tag 'first) a (if (eq? tag 'rest) b 'lazy-pair))))
+
+;;(define (lazy-pair 'a 'b))
+;; (pretty-print ((lazy-pair 'a 'b) 'first))
+;; (pretty-print ((lazy-pair 'a 'b) 'rest))
+;; (pretty-print ((lazy-pair 'a 'b) 'r))
+
+               
+(define (lazy-pair? a) (if (procedure? a) (eq? 'lazy-pair (a 'type?)) false))
+
+(define lazy-list (lambda args (if (pair? args) (lazy-pair (first args) (apply lazy-list (rest args))) args)))
+
+(define ll (lazy-list 'a 'b 'c 'd 'e 'f))
+(pretty-print (ll 'first))
+(pretty-print ((ll 'rest) 'first))
+
+;;returns false if finds missmatch, otherwise returns amount of sexprs matched.
+(define (seq-sexpr-equal? t1 t2 depth)
+  (if (= depth 0)
+      0
+      (if (and (lazy-pair? t1) (lazy-pair? t2))
+          (let ((left (seq-sexpr-equal? (t1 'first) (t2 'first) (- depth 1))))
+                (if (eq? false left)
+                    false
+                    (seq-sexpr-equal? (t1 'rest) (t2 'rest) left)))
+          (if (eq? t1 t2)
+              (- depth 1)
+              false))))
+(define (lazy-equal? a b depth) (not (eq? false (seq-sexpr-equal? a b depth))))
+
+(define (lazy-list->list a depth)
+   (if (= 0 depth)
+      (pair 'unf 0)
+      (if (lazy-pair? a)
+          (let* ((left (lazy-list->list (a 'first) (- depth 1)))
+                 (right (lazy-list->list (a 'rest) (rest left))))
+            (pair (pair (first left) (first right)) (rest right)))
+          (pair a (- depth 1)))))
+
+
+
+(define obs (lazy-list 'a (lazy-list 'a 'b 'b) (lazy-list 'a 'b 'b)))
+
+(pretty-print (map (lambda (n) (lazy-list->list ll n)) (iota 28)))
+
+
+;; (pretty-print (obs))
+;; (pretty-print (lazy-list->list obs 1))
+;; (pretty-print (lazy-list->list obs 2))
+;; (pretty-print (lazy-list->list obs 3))
+;; (pretty-print (lazy-list->list obs 4))
+;; (pretty-print (lazy-list->list obs 5))
+;; (pretty-print (lazy-list->list obs 6))
+
+
+;; (psmc-query (depth) (map list (iota 20))
+;;             10
+;;             0
+
+;;             (define (color)
+;;               (if (flip) 'a 'b))
+            
+;;             (define tree
+;;               (lazify
+;;               (lambda ()
+;;                 (if (flip)
+;;                     (color) 
+;;                     (lazy-list (color) (tree) (tree))))))
+
+;;             (define t (tree))
+            
+;;             (first (lazy-list->list t depth))
+
+;;             (lazy-equal? t obs depth))
+
+
+
+;(tree-equal? (lazify (node 'a (color) 'b)) (node 'a 'b 'b) 2);(tree) obs 1)
+
+
+
+
