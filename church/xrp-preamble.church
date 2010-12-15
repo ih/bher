@@ -4,15 +4,29 @@
 
 ;; (define (grammar-xrp grammar)
 ;;   (let* ([scorer (make-scorer grammar)]
-;;          [proposer abstraction-proposer])
+;;          [proposer (make-proposer grammar)])
 ;;     (make-stateless-xrp
 ;;      "grammar-xrp"
 ;;      grammar
 ;;      scorer
 ;;      proposer))) ;;needs proposal support?
 
-;;creates a function that takes a program and returns the probability of generating the program from the grammar
+;;creates a function that takes a state and returns a program
+(define (make-proposer scorer)
+  (lambda (old-state)
+    (let* ([program (mcmc-state->query-value state)]
+           [ret1 (abstraction-proposer program)]
+           [new-program (first ret1)]
+           [abstraction-fw-prob (second ret1)]
+           [abstraction-bw-prob (third ret1)]
+           [new-program-score (scorer new-program)]
+           [old-program-score (scorer program)])
+      (list new-program (+ abstraction-fw-prob new-program-score) (+ abstraction-bw-prob old-program-score)))))but 
 
+
+
+
+;;creates a function that takes a program and returns the probability of generating the program from the grammar
 (define (make-scorer grammar)
   (lambda (args program)
     (let* ([temps-nfqp (make-temps-nfqp program grammar)]
