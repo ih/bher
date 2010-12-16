@@ -16,8 +16,20 @@
 (pretty-print program)
 
 ;;(pretty-print (iota 2))
-
+;;(lazy-equal? (lazy-list 'a (lazy-list 'b 'd) 'c) (list->lazy-list '(a (b d) c)) 10)
 (define scorer (make-scorer EXPR))
-(exp (scorer '() 't))
+
+(define proposer (make-proposer scorer))
+;;(exp (scorer '() '(if t (if f f f) t)))
+
+(define init-state (make-initial-mcmc-state))
+(define test-state (list (first init-state) (pair 't (lambda () '(if t (if f f f) t))) (third init-state)))
+
+(pretty-print (mcmc-state->query-value test-state))
+(exp (scorer '() (mcmc-state->query-value test-state)))
+
+(proposer test-state)
+
+;; (proposer 
 ;;(scorer '() (lazy-list 'if 't 'f 't))
 

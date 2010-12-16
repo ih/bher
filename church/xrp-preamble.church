@@ -14,22 +14,20 @@
 ;;creates a function that takes a state and returns a program
 (define (make-proposer scorer)
   (lambda (old-state)
-    (let* ([program (mcmc-state->query-value state)]
-           [ret1 (abstraction-proposer program)]
+    (let* ([program (mcmc-state->query-value old-state)]
+           [ret1 (test-abstraction-proposer program)] ;;change this back to abstraction-proposer once you have a proper grammar
            [new-program (first ret1)]
            [abstraction-fw-prob (second ret1)]
            [abstraction-bw-prob (third ret1)]
-           [new-program-score (scorer new-program)]
-           [old-program-score (scorer program)])
-      (list new-program (+ abstraction-fw-prob new-program-score) (+ abstraction-bw-prob old-program-score)))))but 
-
-
-
+           [new-program-score (scorer '() new-program)]
+           [old-program-score (scorer '() program)])
+      (list new-program (+ abstraction-fw-prob new-program-score) (+ abstraction-bw-prob old-program-score))))) 
 
 ;;creates a function that takes a program and returns the probability of generating the program from the grammar
 (define (make-scorer grammar)
   (lambda (args program)
-    (let* ([temps-nfqp (make-temps-nfqp program grammar)]
+    (let* ([lazy-program (list->lazy-list program)]
+           [temps-nfqp (make-temps-nfqp lazy-program grammar)]
            [depths (map list (iota 20))];;FIXME change smc-core to run without a list of temps
            [states (smc-core depths 10 20 temps-nfqp)]
            ;;all particles should be equal, make sure throw error if they are not

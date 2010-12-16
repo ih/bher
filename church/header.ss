@@ -125,8 +125,7 @@
                                       (store->tick store)
                                       (store->enumeration-flag store))
                           'foo))
-     ;;used to get score/random-choices in a church program
-     (define (church-get-store address store) store)
+
      
      (define (return-with-store store new-store value) ,(if *storethreading*
                                                             '(list value new-store)
