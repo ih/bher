@@ -19,7 +19,7 @@
  (church compiler)
  (rnrs eval)
  ;;personal library
- (pi lazy)
+ ;;(pi lazy)
  (pi abstract)
  (util)
  (sym)
