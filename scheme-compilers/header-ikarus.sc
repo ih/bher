@@ -18,10 +18,11 @@
 
  (church compiler)
  (rnrs eval)
- ;;personal library
- ;;(pi lazy)
+ ;;non-standard libraries
+ (pi lazy)
  (pi abstract)
  (util)
  (sym)
+ (scheme-tools repl)
  )
 

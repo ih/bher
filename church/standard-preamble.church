@@ -287,10 +287,10 @@
 ;; compute the depth of a tree (length of the longest branch
 ;; @param tree the tree
 ;; @returns a number, which is the depth of tree
-(define (depth tree)
-  (if (not (list? tree))
-      0
-      (+ 1 (apply max (map depth tree)))))
+;; (define (depth tree)
+;;   (if (not (list? tree))
+;;       0
+;;       (+ 1 (apply max (map depth tree)))))
 
 
 

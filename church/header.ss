@@ -298,7 +298,7 @@
               '(list (make-mcmc-state store 'init-val address) store)
               '(make-mcmc-state (cons (first store) (cdr store)) 'init-val address)))
 
-       ;;this is like church-make-initial-mcmc-state, but flags the created state to init new xrp-draws at left-most element of support.
+       ;;this is like church-make-initial-mcmc-state, obut flags the created state to init new xrp-draws at left-most element of support.
        ;;clears the xrp-draws since it is meant to happen when we begin enumeration (so none of the xrp-draws in store can be relevant).
        (define (church-make-initial-enumeration-state address store)
          ;;FIXME: storethreading.
@@ -311,6 +311,7 @@
        ;;must exit with store being the original store, which allows it to act as a 'counterfactual'. this is taken care of by wrapping as primitive (ie. non church- name).
        (define (counterfactual-update state nfqp . interventions)
          (let* ((new-tick (+ 1 (store->tick (mcmc-state->store state))))
+;;                (db (pretty-print "in cf-update"))
                 (interv-store (make-store (fold (lambda (interv xrps)
                                                   (add-into-addbox (cdr (pull-outof-addbox xrps (xrp-draw-address (first interv))))
                                                                    (xrp-draw-address (first interv))
@@ -337,7 +338,10 @@
                           '(list (church-apply (mcmc-state->address state) interv-store nfqp '()) interv-store) ;;capture store, which may have been mutated.
                           ))
 
-;;                (db (pretty-print (list "interv-store after update" (store->tick (mcmc-state->store state)) interv-store)))
+                ;;(db (pretty-print (list "interv-store after update" (store->tick (mcmc-state->store state)) interv-store)))
+;;                (db (repl ret))
+
+                ;;(db (pretty-print (list "value" (rest (first ret)))))
                 (value (first ret))
                 (new-store (second ret))
                 (ret2 (if (store->enumeration-flag new-store)
@@ -355,6 +359,7 @@
        ;;FIXME: assumes new choices drawn from the conditional prior -- that's currently true but not general.
        (define (clean-store store)
          (let* ((state-tick (store->tick store))
+;;                (db (pretty-print "in clean-store"))
                 (draws-bw/fw
                  (let loop ((draws (addbox->alist (store->xrp-draws store)))
                             (used-draws '())

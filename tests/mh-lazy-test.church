@@ -1,3 +1,6 @@
+(mh-query
+ 10 0 
+
 ;;;LAZY CODE
 (define lazy-null '())
 (define lazy-null? null?)
@@ -84,7 +87,7 @@
 ;;;GRAMMAR
 (define (gen-program)
   (let* ([num-of-funcs (random-integer MAX-FUNCS)]
-         [db (pretty-print "in gen-program")]
+;;         [db (pretty-print "in gen-program")]
 ;;         [db (error "in gen-program" "fjdsl")]
          [function-signatures (gen-func-signatures num-of-funcs)]
          [functions (gen-functions  function-signatures)]
@@ -167,27 +170,14 @@
 
 (define choose-var lazy-uniform-draw)
 
-;;(pretty-print (iota 2))
-;;(lazy-equal? (lazy-list 'a (lazy-list 'b 'd) 'c) (list->lazy-list '(a (b d) c)) 10)
-
-;;;INFERENCE
-(define scorer (make-scorer gen-program))
-(exp (scorer '() '(let () t)))
-
-;;;TESTS
 
 
-;;(define proposer (make-proposer scorer))
+(define lazy-program (gen-program))
+(define program (lazy-list->all-list lazy-program))
 
+(define extra-xrp (flip))
 
-;; (define init-state (make-initial-mcmc-state))
-;; (define test-state (list (first init-state) (pair 't (lambda () '(if t (if f f f) t))) (third init-state)))
-
-;; (pretty-print (mcmc-state->query-value test-state))
-;; (exp (scorer '() (mcmc-state->query-value test-state)))
-
-;; (proposer test-state)
-
-;; (proposer 
-;;(scorer '() (lazy-list 'if 't 'f 't))
-
+;;query
+(list program extra-xrp)
+;;condition
+(and (equal? (depth program) 3) (equal? extra-xrp true)))
