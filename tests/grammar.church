@@ -78,10 +78,12 @@
 
 
 
+
+;;;GRAMMAR
 (define MAX-FUNCS 5)
 (define MAX-ARITY 3)
 
-;;;GRAMMAR
+
 (define (gen-program)
   (let* ([num-of-funcs (random-integer MAX-FUNCS)]
          [db (pretty-print "in gen-program")]

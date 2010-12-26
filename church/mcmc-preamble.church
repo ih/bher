@@ -176,7 +176,7 @@
 
     (let* (;(dummy (display (map mcmc-state->query-value population))) (dummy (display "\n"))
            ;;step forward temps.
-;;           (db (pretty-print (list "the temp" (first temps) (mcmc-state->query-value (first population)) (length population))))
+           (db (pretty-print (list "the temp" (first temps) (mcmc-state->query-value (first population)) (length population))))
            (rets (map (lambda (state) (counterfactual-update state (apply temps->nfqp (first temps)))) population))
 
 ;;           (db (pretty-print "after the cf"))
@@ -194,7 +194,8 @@
            (resample-distribution (map exp (log-normalize weights)))
            (collapse? (nan? (first resample-distribution)))
            (new2-population (if collapse?
-                                '()
+                                (let ([db (pretty-print "collapse!!!")])
+                                  '())
                                 (repeat popsize (lambda () (begin
                                                              (reset-store-xrp-draws) ;;FIXME!! this is to avoid accumulating xrp-draws...
                                                              (multinomial new-population resample-distribution))))))

@@ -17,18 +17,24 @@
 
 ;;(pretty-print (iota 2))
 ;;(lazy-equal? (lazy-list 'a (lazy-list 'b 'd) 'c) (list->lazy-list '(a (b d) c)) 10)
+(define p '(if t f t))
 (define scorer (make-scorer EXPR))
 
-(define proposer (make-proposer scorer))
-;;(exp (scorer '() '(if t (if f f f) t)))
+;;(pretty-print (lazy-list->list p))
+(exp (scorer '() p))
+(compute-depth (lazy-list 'if 't 'f 't))
+(lazy-list->list (lazy-list 'if 't 'f 't) 10)
+(iota 10)
+;;(define proposer (make-proposer scorer))
 
-(define init-state (make-initial-mcmc-state))
-(define test-state (list (first init-state) (pair 't (lambda () '(if t (if f f f) t))) (third init-state)))
 
-(pretty-print (mcmc-state->query-value test-state))
-(exp (scorer '() (mcmc-state->query-value test-state)))
+;;(define init-state (make-initial-mcmc-state))
+;;(define test-state (list (first init-state) (pair 't (lambda () '(if t (if f f f) t))) (third init-state)))
 
-(proposer test-state)
+;;(pretty-print (mcmc-state->query-value test-state))
+;;(exp (scorer '() (mcmc-state->query-value test-state)))
+
+;;(proposer test-state)
 
 ;; (proposer 
 ;;(scorer '() (lazy-list 'if 't 'f 't))
