@@ -1,7 +1,3 @@
-(mh-query
- 10 0 
-
-;;;GRAMMAR
 (define MAX-FUNCS 5)
 (define MAX-ARITY 3)
 
@@ -73,6 +69,8 @@
 
 (define combine-if-parts lazy-list)
 
+;;vars are the variables exist in the same scope as the application being created and can be used in the body of the application
+;;function-signatures are the functions availabe to be applied
 (define (gen-application vars function-signatures)
   (let* ([function-signature (lazy-uniform-draw function-signatures)]
          [function (get-name function-signature)]
@@ -89,15 +87,14 @@
 
 (define choose-var lazy-uniform-draw)
 
-
-
-
 (define lazy-program (gen-program))
 (define program (lazy-list->all-list lazy-program))
 
-(define extra-xrp (flip))
 
-;;query
-(list program extra-xrp)
-;;condition
-(and (equal? (depth program) 3) (equal? extra-xrp true)))
+;;(pretty-print program)
+
+;;unit tests
+;;;gen-application tests
+(define test-vars (gen-vars 3))
+(define test-functions (gen-func-signatures 2))
+(pretty-print (lazy-list->all-list (gen-application test-vars test-functions)))

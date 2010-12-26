@@ -1,0 +1,4 @@
+(pretty-print (lazy-list 1 2 3))
+(define lp (lazy-pair 1 2))
+(pretty-print (lazy-list->all-list (lazy-pair 1 2)))
+(lazy-first lp)
