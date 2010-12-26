@@ -179,7 +179,7 @@
            (db (pretty-print (list "the temp" (first temps) (mcmc-state->query-value (first population)) (length population))))
            (rets (map (lambda (state) (counterfactual-update state (apply temps->nfqp (first temps)))) population))
 
-;;           (db (pretty-print "after the cf"))
+           (db (pretty-print "after the cf"))
            (new-population (map first rets))
            (cd-bw/fw (map second rets))
            (weights (map (lambda (old-weight old-state new-state cd-bw/fw) (+ old-weight

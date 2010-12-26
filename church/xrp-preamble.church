@@ -28,9 +28,8 @@
   (lambda (args program)
     (let* ([lazy-program (list->lazy-list program)]
            [temps-nfqp (make-temps-nfqp lazy-program grammar)]
-           ;;[depths (map list (iota 50))];;FIXME change smc-core to run without a list of temps
-           [depths (map list (iota (compute-depth lazy-program)))];;FIXME change smc-core to run without a list of temps
-           [states (smc-core depths 10 20 temps-nfqp)]
+           [depths (map list (iota (compute-depth lazy-program)))]
+           [states (smc-core depths 1 20 temps-nfqp)]
            ;;all particles should be equal, make sure throw error if they are not
            [score (mcmc-state->score (uniform-draw states))])
       score)))

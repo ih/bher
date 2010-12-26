@@ -39,8 +39,11 @@
       (lazy-pair (lazy-lst1 'first) (lazy-append (lazy-lst1 'rest) lazy-lst2))))
 
 (define (compute-depth lazy-lst)
-  (pretty-print "define compute-depth"))
-
+  (if (not (lazy-pair? lazy-lst))
+      2
+      (let* ([left (compute-depth (lazy-lst 'first))]
+             [right (compute-depth (lazy-lst 'rest))])
+        (+ left right))))
 (define (lazy-length lazy-lst)
   (if (null? lazy-lst)
       0
@@ -86,8 +89,7 @@
 
 (define (gen-program)
   (let* ([num-of-funcs (random-integer MAX-FUNCS)]
-         [db (pretty-print "in gen-program")]
-;;         [db (error "in gen-program" "fjdsl")]
+         [db (pretty-print "in nfqp")]
          [function-signatures (gen-func-signatures num-of-funcs)]
          [functions (gen-functions  function-signatures)]
          [body (gen-expr '() function-signatures)])
