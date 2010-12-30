@@ -98,3 +98,5 @@
 (define test-vars (gen-vars 3))
 (define test-functions (gen-func-signatures 2))
 (pretty-print (lazy-list->all-list (gen-application test-vars test-functions)))
+
+(pretty-print (lazy-list->list (gen-program) 4))

@@ -1,12 +1,12 @@
 (mh-query
- 10 0 
+ 10 10
 
 ;;;GRAMMAR
 (define MAX-FUNCS 5)
 (define MAX-ARITY 3)
 
 (define (gen-program)
-  (let* ([num-of-funcs (random-integer MAX-FUNCS)]
+  (let* ([num-of-funcs (sample-integer MAX-FUNCS)]
          [db (pretty-print "in nfqp")]
          [function-signatures (gen-func-signatures num-of-funcs)]
          [functions (gen-functions  function-signatures)]
@@ -29,7 +29,7 @@
 
 (define (gen-func-signature)
   (let* ([name (sym 'F)]
-         [arity (random-integer MAX-ARITY)]
+         [arity (sample-integer MAX-ARITY)]
          [vars (gen-vars arity)])
     (combine-sig-parts name vars)))
 (define combine-sig-parts lazy-pair)
@@ -74,7 +74,7 @@
 (define combine-if-parts lazy-list)
 
 (define (gen-application vars function-signatures)
-  (let* ([function-signature (lazy-uniform-draw function-signatures)]
+  (let* ([function-signature (lud function-signatures)]
          [function (get-name function-signature)]
          [arity (get-arity function-signature)]
          [args (gen-args arity vars function-signatures)])
@@ -87,7 +87,24 @@
       (lazy-pair (gen-expr vars function-signatures) (gen-args (- arity 1) vars function-signatures))))
 ;;  (lazy-repeat arity (lambda () (gen-expr vars function-signatures))))
 
-(define choose-var lazy-uniform-draw)
+;;(define choose-var lazy-uniform-draw)
+(define choose-var lud)
+
+
+;; (define (lazy-uniform-draw ll)
+;;   (let* ([unlazy-list (lazy-list->all-list ll)]
+;;          [db (pretty-print (list "lazy-draw" unlazy-list (length unlazy-list)))]
+;;          [chosen-elment (uniform-draw unlazy-list)]
+;;          [lazy-element (list->lazy-list chosen-elment)])
+;;     lazy-element))
+
+(define (lud ll)
+  (let* ([unlazy-list (lazy-list->all-list ll)]
+         [db (pretty-print (list "lazy-draw" unlazy-list (length unlazy-list)))]
+         [chosen-elment (uniform-draw unlazy-list)]
+         [lazy-element (list->lazy-list chosen-elment)])
+    lazy-element))
+         
 
 
 

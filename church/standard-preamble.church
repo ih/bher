@@ -16,11 +16,25 @@
 ; Draw from a list uniformly at random (could do this with multinomial instead).
 ; @param lst the list to draw from
 ; @return a randomly chosen element from the list (or null, if the list is empty)
-(define (uniform-draw lst) 
+;; (define (uniform-draw lst) 
+;;   (if (null? lst)
+;;       '()
+;;       (let ([chosen (sample-integer (length lst))])
+;;         (if (>= chosen (length lst))
+;;             (pretty-print (list "error" lst chosen (length lst) (sample-integer (length lst))));;(list-ref lst (- (length lst) 1))
+;;             (list-ref lst chosen)))))
+(define (uniform-draw lst)
   (if (null? lst)
       '()
       (list-ref lst (sample-integer (length lst)))))
-
+(define (safe-uniform-draw lst)
+ (if (null? lst)
+     '()
+     (let ([n (sample-integer (length lst))])
+       (if (or (< n 0)
+               (>= n (length lst)))
+           (list-ref lst 0)
+           (list-ref lst n)))))
 ;old version: pure church
 ;(define uniform-draw 
 ;  (marg

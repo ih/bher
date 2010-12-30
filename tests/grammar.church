@@ -2,10 +2,9 @@
 (define MAX-FUNCS 5)
 (define MAX-ARITY 3)
 
-
 (define (gen-program)
-  (let* ([num-of-funcs (random-integer MAX-FUNCS)]
-         [db (pretty-print "in nfqp")]
+  (let* ([num-of-funcs (sample-integer MAX-FUNCS)]
+         ;;[db (pretty-print "in nfqp")]
          [function-signatures (gen-func-signatures num-of-funcs)]
          [functions (gen-functions  function-signatures)]
          [body (gen-expr '() function-signatures)])
@@ -27,7 +26,7 @@
 
 (define (gen-func-signature)
   (let* ([name (sym 'F)]
-         [arity (random-integer MAX-ARITY)]
+         [arity (sample-integer MAX-ARITY)]
          [vars (gen-vars arity)])
     (combine-sig-parts name vars)))
 (define combine-sig-parts lazy-pair)
@@ -72,7 +71,8 @@
 (define combine-if-parts lazy-list)
 
 (define (gen-application vars function-signatures)
-  (let* ([function-signature (lazy-uniform-draw function-signatures)]
+  (let* (;;[db (pretty-print "in gen-app")]
+         [function-signature (lazy-uniform-draw function-signatures)]
          [function (get-name function-signature)]
          [arity (get-arity function-signature)]
          [args (gen-args arity vars function-signatures)])
@@ -87,8 +87,11 @@
 
 (define choose-var lazy-uniform-draw)
 
-;;(pretty-print (iota 2))
-;;(lazy-equal? (lazy-list 'a (lazy-list 'b 'd) 'c) (list->lazy-list '(a (b d) c)) 10)
+(define (lazy-uniform-draw ll)
+  (let* ([unlazy-list (lazy-list->all-list ll)]
+         [chosen (safe-uniform-draw unlazy-list)])
+    (list->lazy-list chosen)))
+         
 
 ;;;INFERENCE
 (define scorer (make-scorer gen-program))

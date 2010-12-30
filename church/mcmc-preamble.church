@@ -34,6 +34,7 @@
              (proposed-val (first ret1))
              (proposal-fw-score (second ret1))
              (proposal-bw-score (third ret1))
+             ;;(db (pretty-print "basic-pd cfupdate"))
              (ret2 (counterfactual-update state normal-form-proc (pair chosen-xrp proposed-val)))
              (proposal-state (first ret2))
              (cd-bw/fw (second ret2))
@@ -176,10 +177,10 @@
 
     (let* (;(dummy (display (map mcmc-state->query-value population))) (dummy (display "\n"))
            ;;step forward temps.
-           (db (pretty-print (list "the temp" (first temps) (mcmc-state->query-value (first population)) (length population))))
+           ;;(db (pretty-print (list "the temp" (first temps) (mcmc-state->query-value (first population)) (length population))))
            (rets (map (lambda (state) (counterfactual-update state (apply temps->nfqp (first temps)))) population))
 
-           (db (pretty-print "after the cf"))
+           ;;(db (pretty-print "after the cf"))
            (new-population (map first rets))
            (cd-bw/fw (map second rets))
            (weights (map (lambda (old-weight old-state new-state cd-bw/fw) (+ old-weight

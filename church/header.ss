@@ -225,11 +225,13 @@
           (lambda (address store . args)
             (let* ((tmp (pull-outof-addbox (store->xrp-draws store) address)) ;;FIXME!! check if xrp-address has changed?
                    (old-xrp-draw (car tmp))
+                   ;;[db (pretty-print (list "inside xrp" xrp-name old-xrp-draw))]
                    (rest-xrp-draws (cdr tmp))
                    (old-tick (if (eq? #f old-xrp-draw) '() (first (xrp-draw-ticks old-xrp-draw)))))
               ;;if this xrp-draw has been touched on this tick, as in mem, don't change score or stats.
               (if (equal? (store->tick store) old-tick)
-                  (return-with-store store store (xrp-draw-value old-xrp-draw))
+                  (let ();;[db (pretty-print (list "xrp unchanged so tick is old-tick" (xrp-draw-score old-xrp-draw)))])
+                  (return-with-store store store (xrp-draw-value old-xrp-draw)))
                   (let* ((tmp (pull-outof-addbox (store->xrp-stats store) xrp-address))
                          (stats (caar tmp))
                          (rest-statsbox (cdr tmp))
@@ -311,8 +313,10 @@
        ;;must exit with store being the original store, which allows it to act as a 'counterfactual'. this is taken care of by wrapping as primitive (ie. non church- name).
        (define (counterfactual-update state nfqp . interventions)
          (let* ((new-tick (+ 1 (store->tick (mcmc-state->store state))))
-;;                (db (pretty-print "in cf-update"))
+                ;;(db (pretty-print (list "interventions size" (length interventions) interventions)))
                 (interv-store (make-store (fold (lambda (interv xrps)
+                                                  (let (;;[db (pretty-print (list "going through interventions" xrps))])
+                                                        )
                                                   (add-into-addbox (cdr (pull-outof-addbox xrps (xrp-draw-address (first interv))))
                                                                    (xrp-draw-address (first interv))
                                                                    (make-xrp-draw (xrp-draw-address (first interv))
@@ -322,7 +326,7 @@
                                                                                   (xrp-draw-ticks (first interv))
                                                                                   'dummy-score ;;dummy score which will be replace on update.
                                                                                   (xrp-draw-support (first interv))
-                                                                                  )))
+                                                                                  ))))
                                                 (store->xrp-draws (mcmc-state->store state))
                                                 interventions)
                                           (store->xrp-stats (mcmc-state->store state)) ;;NOTE: incremental differs here (adjust score for new values).
@@ -330,7 +334,7 @@
                                           new-tick ;;increment the generation counter.
                                           (store->enumeration-flag (mcmc-state->store state))
                                           ))
-;;                (db (pretty-print (list "interv-store" (store->tick (mcmc-state->store state)) interv-store)))
+               ;; (db (pretty-print (list "interv-store"  interv-store)))
                 ;;application of the nfqp happens with interv-store, which is a fresh pair, so won't mutate original state.
                 ;;after application the store must be captured and put into the mcmc-state.
                 (ret ,(if *storethreading*
@@ -344,6 +348,7 @@
                 ;;(db (pretty-print (list "value" (rest (first ret)))))
                 (value (first ret))
                 (new-store (second ret))
+                ;;(db (pretty-print (list "passing to clean-store" new-store)))
                 (ret2 (if (store->enumeration-flag new-store)
                           (list new-store 0)
                           (clean-store new-store))) ;;FIXME!! need to clean out unused xrp-stats?
