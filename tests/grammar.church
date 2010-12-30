@@ -10,7 +10,7 @@
          [body (gen-expr '() function-signatures)])
     (combine-program-parts functions body)))
 (define (combine-program-parts functions body)
-  (lazy-append (lazy-append (lazy-list 'let '()) functions) (lazy-list body)))
+  (lazy-append (lazy-append (lazy-list 'lambda '()) functions) (lazy-list body)))
 
 ;;function signature related functions
 (define get-name lazy-first)
@@ -94,13 +94,13 @@
          
 
 ;;;INFERENCE
-(define lett (list->lazy-list '(let () t)))
-(pretty-print (map (lambda (x) (lazy-list->list lett x)) (range 0 10)))
+;;(define lett (list->lazy-list '(lambda () t)))
+;;(pretty-print (map (lambda (x) (lazy-list->list lett x)) (range 0 10)))
 
 
 
-;;(define scorer (make-scorer gen-program))
-;;(exp (scorer '() '(let () t)))
+(define scorer (make-scorer gen-program))
+(pretty-print (exp (scorer '() '(lambda () (if t f t)))))
 ;;;TESTS
 (define testp (gen-program))
 (pretty-print (map (lambda (x) (lazy-list->list testp x)) (range 0 10)))
