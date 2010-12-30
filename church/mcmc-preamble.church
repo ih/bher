@@ -175,27 +175,27 @@
                                                      (rejection-initializer (apply temps->nfqp (first temps)))))))
             (weights (make-list popsize 0)))
 
-    (let* (;(dummy (display (map mcmc-state->query-value population))) (dummy (display "\n"))
+    (let* ((dummy (display (map mcmc-state->query-value population))) (dummy (display "\n"))
            ;;step forward temps.
-           ;;(db (pretty-print (list "the temp" (first temps) (mcmc-state->query-value (first population)) (length population))))
+           (db (pretty-print (list "the temp" (first temps))))
            (rets (map (lambda (state) (counterfactual-update state (apply temps->nfqp (first temps)))) population))
 
            ;;(db (pretty-print "after the cf"))
            (new-population (map first rets))
            (cd-bw/fw (map second rets))
            (weights (map (lambda (old-weight old-state new-state cd-bw/fw) (+ old-weight
-                                                                              (- (mcmc-state->score new-state) (mcmc-state->score old-state))
-                                                                              cd-bw/fw))
-                         weights
-                         population
+                                                                               (- (mcmc-state->score new-state) (mcmc-state->score old-state))
+                                                                             cd-bw/fw))
+                          weights
+                          population
                          new-population
-                         cd-bw/fw))
+                          cd-bw/fw))
            
            ;;resample and reset weights (optional).
            (resample-distribution (map exp (log-normalize weights)))
            (collapse? (nan? (first resample-distribution)))
            (new2-population (if collapse?
-                                (let ([db (pretty-print "collapse!!!")])
+                                (let ([db (pretty-print (list "collapse!!!" weights resample-distribution))])
                                   '())
                                 (repeat popsize (lambda () (begin
                                                              (reset-store-xrp-draws) ;;FIXME!! this is to avoid accumulating xrp-draws...
@@ -212,7 +212,8 @@
                   (map mcmc-state->score new3-population))
              (display "\n")
       ;;loop if there are any temps left.
-      (if (or collapse? (null? (rest temps)))
+;;      (if (or collapse? (null? (rest temps)))
+      (if (null? (rest temps))
           new3-population
           (smc (rest temps) new3-population weights)))))  )
 

@@ -21,10 +21,10 @@
 (define scorer (make-scorer EXPR))
 
 ;;(pretty-print (lazy-list->list p))
-(exp (scorer '() p))
+(pretty-print (exp (scorer '() p)))
 (compute-depth (lazy-list 'if 't 'f 't))
 (lazy-list->list (lazy-list 'if 't 'f 't) 10)
-(iota 10)
+
 ;;(define proposer (make-proposer scorer))
 
 

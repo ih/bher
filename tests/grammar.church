@@ -1,6 +1,6 @@
 ;;;GRAMMAR
-(define MAX-FUNCS 5)
-(define MAX-ARITY 3)
+(define MAX-FUNCS 1)
+(define MAX-ARITY 1)
 
 (define (gen-program)
   (let* ([num-of-funcs (sample-integer MAX-FUNCS)]
@@ -94,11 +94,16 @@
          
 
 ;;;INFERENCE
-(define scorer (make-scorer gen-program))
-(exp (scorer '() '(let () t)))
+(define lett (list->lazy-list '(let () t)))
+(pretty-print (map (lambda (x) (lazy-list->list lett x)) (range 0 10)))
 
+
+
+;;(define scorer (make-scorer gen-program))
+;;(exp (scorer '() '(let () t)))
 ;;;TESTS
-
+(define testp (gen-program))
+(pretty-print (map (lambda (x) (lazy-list->list testp x)) (range 0 10)))
 
 ;;(define proposer (make-proposer scorer))
 
