@@ -29,7 +29,7 @@
     (let* ([lazy-program (list->lazy-list program)]
            [temps-nfqp (make-temps-nfqp lazy-program grammar)]
            [depths (map list (iota (compute-depth lazy-program)))]
-           [states (smc-core depths 10 10 temps-nfqp)]
+           [states (smc-core depths 100 10 temps-nfqp)]
            ;;all particles should be equal, make sure throw error if they are not
            [score (mcmc-state->score (uniform-draw states))])
       score)))

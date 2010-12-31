@@ -1,15 +1,17 @@
 ;;;GRAMMAR
-(define MAX-FUNCS 1)
-(define MAX-ARITY 1)
+(define MAX-FUNCS 4)
+(define MAX-ARITY 4)
 
 (define (gen-program)
   (let* ([num-of-funcs (sample-integer MAX-FUNCS)]
          ;;[db (pretty-print "in nfqp")]
          [function-signatures (gen-func-signatures num-of-funcs)]
          [functions (gen-functions  function-signatures)]
-         [body (gen-expr '() function-signatures)])
+         [body (gen-expr '() function-signatures)]
+         [reset-symbols (reset-symbol-indizes!)])
     (combine-program-parts functions body)))
 (define (combine-program-parts functions body)
+
   (lazy-append (lazy-append (lazy-list 'lambda '()) functions) (lazy-list body)))
 
 ;;function signature related functions
@@ -26,6 +28,7 @@
 
 (define (gen-func-signature)
   (let* ([name (sym 'F)]
+         ;;[name 'F]
          [arity (sample-integer MAX-ARITY)]
          [vars (gen-vars arity)])
     (combine-sig-parts name vars)))
@@ -50,7 +53,7 @@
          [body (gen-expr vars function-signatures)])
     (combine-function-parts function-signature body)))
 (define (combine-function-parts function-signature body)
-  (lazy-list 'define function-signature body))
+  (lazy-list 'define (get-name function-signature) (lazy-list 'lambda (get-vars function-signature) body)))
 
 (define (gen-expr vars function-signatures)
   (cond [(and (null? vars) (null? function-signatures))
@@ -100,10 +103,13 @@
 
 
 (define scorer (make-scorer gen-program))
-(pretty-print (exp (scorer '() '(lambda () (if t f t)))))
+(pretty-print (exp (scorer '() '(lambda () (define F1 (lambda (V1 V2) t)) (define F2 (lambda (V3) t)) (if t f t)))))
+
 ;;;TESTS
-(define testp (gen-program))
-(pretty-print (map (lambda (x) (lazy-list->list testp x)) (range 0 10)))
+ (define testp (gen-program))
+ (pretty-print (map (lambda (x) (lazy-list->list testp x)) (range 0 (compute-depth testp))))
+;; (define testq (list->lazy-list '(lambda () (define F (lambda () t)) (if t f t))))
+;;  (pretty-print (map (lambda (x) (lazy-list->list testq x)) (range 0 (compute-depth testq))))
 
 ;;(define proposer (make-proposer scorer))
 
