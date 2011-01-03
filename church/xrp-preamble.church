@@ -15,8 +15,9 @@
 (define (make-proposer scorer)
   (lambda (old-state)
     (let* ([program (mcmc-state->query-value old-state)]
-           [ret1 (test-abstraction-proposer program)] ;;change this back to abstraction-proposer once you have a proper grammar
+           [ret1 (abstraction-proposer program)] ;;change this back to abstraction-proposer once you have a proper grammar
            [new-program (first ret1)]
+           [db (pretty-print (list "new program" new-program))]
            [abstraction-fw-prob (second ret1)]
            [abstraction-bw-prob (third ret1)]
            [new-program-score (scorer '() new-program)]

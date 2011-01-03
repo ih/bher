@@ -1,3 +1,5 @@
+;;(eval #t)
+(+ 2 2)
 ;; (mh-query
 ;;  10 10
 ;;  (define lst (range 0 (sample-integer 9)))
@@ -5,12 +7,12 @@
 ;;  choice
 ;;  (= 1 1))
 
-(define s (list->lazy-list '(let () t)))
-(define s2 (list->lazy-list '(labmda () t)))
+;; (define s (list->lazy-list '(let () t)))
+;; (define s2 (list->lazy-list '(labmda () t)))
 
-(define t (lazy-append (lazy-append (list->lazy-list '(let () t)) (lazy-list 1 2 3)) (lazy-list (lazy-list 'd 'e 'f))))
-(pretty-print (map (lambda (x) (lazy-list->list s x)) (range 0 10)))
-(pretty-print (map (lambda (x) (lazy-list->list t x)) (range 0 10)))
-;(pretty-print (map (lambda (x) (lazy-list->list t x)) (range 0 10)))
-(define q (lazy-list 'let '() 't))
-(define q2 (lazy-list 'labmda '() 't))
+;; (define t (lazy-append (lazy-append (list->lazy-list '(let () t)) (lazy-list 1 2 3)) (lazy-list (lazy-list 'd 'e 'f))))
+;; (pretty-print (map (lambda (x) (lazy-list->list s x)) (range 0 10)))
+;; (pretty-print (map (lambda (x) (lazy-list->list t x)) (range 0 10)))
+;; ;(pretty-print (map (lambda (x) (lazy-list->list t x)) (range 0 10)))
+;; (define q (lazy-list 'let '() 't))
+;; (define q2 (lazy-list 'labmda '() 't))
