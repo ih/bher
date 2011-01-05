@@ -30,7 +30,9 @@
   (if (addbox-empty? (mcmc-state->xrp-draws state))
       (list 0.0 state) ;;if no xrps have been drawn (eg all randomness in q-e) make trivial proposal. (still have to update..??)
       (let* ((chosen-xrp (rest (uniform-draw (addbox->alist (mcmc-state->xrp-draws state))))) ;;rest is because xrp-draws is an addbox, so address is first.
+             [db (if (equal? (xrp-draw-name chosen-xrp) "grammar-xrp") (pretty-print (list "grammar xrp" chosen-xrp)) #f)]
              (ret1 ((xrp-draw-proposer chosen-xrp) state))
+
              (proposed-val (first ret1))
              (proposal-fw-score (second ret1))
              (proposal-bw-score (third ret1))
@@ -132,7 +134,8 @@
 
 ;;;queries
 (define (repeated-mcmc-query-core initializer kernel num-samples)
-  (let ([init-state (initializer)])
+  (let* ([init-state (initializer)]
+        [db (pretty-print (list "init state" (mcmc-state->query-value init-state)))])
     (when inference-timing
           (display "initialized: ")
           (display (current-date))
@@ -175,9 +178,9 @@
                                                      (rejection-initializer (apply temps->nfqp (first temps)))))))
             (weights (make-list popsize 0)))
 
-    (let* ((dummy (display (map mcmc-state->query-value population))) (dummy (display "\n"))
+    (let* (;;(dummy (display (map mcmc-state->query-value population))) (dummy (display "\n"))
            ;;step forward temps.
-           (db (pretty-print (list "the temp" (first temps))))
+           ;;(db (pretty-print (list "the temp" (first temps))))
            (rets (map (lambda (state) (counterfactual-update state (apply temps->nfqp (first temps)))) population))
 
            ;;(db (pretty-print "after the cf"))
@@ -207,10 +210,10 @@
                                                                mcmc-state->score)))
            (new3-population (map kernel new2-population)))
 
-      (begin (map (lambda (x y) (begin (display "  ")(display x)(display "  ")(display y)(display "\n")))
-                  (map mcmc-state->query-value new3-population)
-                  (map mcmc-state->score new3-population))
-             (display "\n")
+      (begin ;;(map (lambda (x y) (begin (display "  ")(display x)(display "  ")(display y)(display "\n")))
+               ;;   (map mcmc-state->query-value new3-population)
+                 ;; (map mcmc-state->score new3-population))
+             ;;(display "\n")
       ;;loop if there are any temps left.
 ;;      (if (or collapse? (null? (rest temps)))
       (if (null? (rest temps))

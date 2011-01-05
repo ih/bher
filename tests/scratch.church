@@ -1,5 +1,5 @@
-;;(eval #t)
-(+ 2 2)
+(eval '(+ 2 2))
+;;(+ 2 2)
 ;; (mh-query
 ;;  10 10
 ;;  (define lst (range 0 (sample-integer 9)))

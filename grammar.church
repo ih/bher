@@ -137,9 +137,20 @@
 
 ;; (proposer test-state)
 ;;;grammar-xrp tests
-(lazy-list->all-list ((grammar-xrp gen-program)))
-;;;mh test using grammar-xrp
+;;(lazy-list->all-list ((grammar-xrp gen-program)))
 
+
+;(pretty-print (xrp-draw-name gxrp))
+;;;mh test using grammar-xrp
+(define t #t)
+(define f #f)
+(mh-query
+ 10 1
+ (define lazy-program ((grammar-xrp gen-program)))
+ (define program (lazy-list->all-list lazy-program))
+ program
+ (equal? (depth program) 1))
+ 
 ;;(define testp (gen-program))
 ;;(pretty-print (map (lambda (x) (lazy-list->list testp x)) (range 0 (compute-depth testp))))
 ;; (define testq (list->lazy-list '(lambda () (define F (lambda () t)) (if t f t))))

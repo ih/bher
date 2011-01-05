@@ -2,19 +2,20 @@
 
 ;;this is the church xrp-preamble, that creates all standard xrps. some primitive pieces (samplers, scorers) are added in the scheme header.
 
-;; (define (grammar-xrp grammar)
-;;   (let* ([scorer (make-scorer grammar)]
-;;          [proposer (make-proposer grammar)])
-;;     (make-stateless-xrp
-;;      "grammar-xrp"
-;;      grammar
-;;      scorer
-;;      proposer))) ;;needs proposal support?
+(define (grammar-xrp grammar)
+  (let* ([scorer (make-scorer grammar)]
+         [proposer (make-proposer scorer)])
+    (make-stateless-xrp
+     "grammar-xrp"
+     grammar
+     scorer
+     proposer))) ;;needs proposal support?
 
-;;creates a function that takes a state and returns a program
+;;creates a function that takes a state and returns a program, proposal-fw-score, and proposal-bw-score
 (define (make-proposer scorer)
-  (lambda (old-state)
-    (let* ([program (mcmc-state->query-value old-state)]
+  (lambda (operands old-value)
+    (let* ([db (pretty-print (list "inside the proposer" old-value))]
+           [program (lazy-list->all-list old-value)]
            [ret1 (abstraction-proposer program)] ;;change this back to abstraction-proposer once you have a proper grammar
            [new-program (first ret1)]
            [db (pretty-print (list "new program" new-program))]

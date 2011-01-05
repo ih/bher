@@ -1,0 +1,3 @@
+(let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
+  (church-apply (mcmc-state->address state) store proposer (list args value)))
+(eval '(uniform-draw '(1 2 3)))
