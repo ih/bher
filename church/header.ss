@@ -73,7 +73,7 @@
 
      ;;requires compile, eval, and environment to be available from underlying scheme....
      (define (church-eval addr store sexpr)
-       ;(display (compile sexpr '()) ))
+       (pretty-print (list "about to eval"))
        ((eval `(letrec ,(map (lambda (def)
                               (if (symbol? (cadr def))
                                   (list (cadr def) (caddr def))

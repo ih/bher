@@ -30,6 +30,7 @@
                             (load "mcmc-preamble.church")
                             ,@top-list))
           (ds-sexpr (de-sugar-all church-sexpr))
+          ;;(db (pretty-print (list "desguared expression w/o preambles" (first top-list) (de-sugar-all (first top-list)))))
           (ds-sexpr (if *lazy*
                         (add-forcing ds-sexpr) ;;to make everything lazy, wrap church-sexpr with (lazify ..) before desugaring.
                         ds-sexpr))
@@ -72,7 +73,7 @@
  (define (addressing sexpr)
    (cond
     ((begin? sexpr) `(begin ,@(map addressing (rest sexpr))))
-    ((definition? sexpr) (error "addressing" "defines should have all been de-sugared!"))
+    ((definition? sexpr) (error "addressing" "defines should have all been de-sugared!" sexpr))
     ((letrec? sexpr) `(letrec ,(map (lambda (binding) (list (church-rename (first binding)) (addressing (second binding)))) (second sexpr))
                         ,(addressing (third sexpr))))
     ((mem? sexpr) `((lambda (mem-address store proc)

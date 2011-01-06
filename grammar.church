@@ -11,8 +11,7 @@
          [reset-symbols (reset-symbol-indizes!)])
     (combine-program-parts functions body)))
 (define (combine-program-parts functions body)
-
-  (lazy-append (lazy-append (lazy-list 'lambda '()) functions) (lazy-list body)))
+  (lazy-append (lazy-append (lazy-list 'let '()) functions) (lazy-list body)))
 
 ;;function signature related functions
 (define get-name lazy-first)
@@ -66,7 +65,7 @@
          (sample (multinomial (list (lambda () (gen-if vars function-signatures)) gen-bool (lambda () (gen-application vars function-signatures)) (lambda () (choose-var vars))) (list 1/12 3/4 1/12 1/12)))]))
 
 (define (gen-bool)
-  (uniform-draw '(t f)))
+  (uniform-draw '(#t #f)))
 
 (define (gen-if vars function-signatures)
   (combine-if-parts 'if (gen-expr vars function-signatures) (gen-expr vars function-signatures) (gen-expr vars function-signatures)))
@@ -106,8 +105,8 @@
 ;;;TESTS
 ;;;grammar test
 ;;;evaluation check
-;;(define testp (lazy-list->all-list (gen-program)))
-;;(pretty-print (list testp (eval testp)))
+;; (define testp (lazy-list->all-list (gen-program)))
+;; (pretty-print (list testp (eval testp)))
 
 ;;;scorer tests
 ;;(define scorer (make-scorer gen-program))
@@ -124,7 +123,7 @@
 ;; (define t #t)
 ;; (define f #f)
 
-;; (define test-expr (lambda () '(lambda () (if (if t t t) (if t t t) (if t t t)))))
+;;(define test-expr (lambda () '(lambda () (if (if t t t) (if t t t) (if t t t)))))
 
 ;; (define proposer (make-proposer scorer))
 
@@ -142,14 +141,22 @@
 
 ;(pretty-print (xrp-draw-name gxrp))
 ;;;mh test using grammar-xrp
-(define t #t)
-(define f #f)
+;; (define t #t)
+;; (define f #f)
+;;depth test
+;; (mh-query
+;;  10 1
+;;  (define lazy-program ((grammar-xrp gen-program)))
+;;  (define program (lazy-list->all-list lazy-program))
+;;  program
+;;  (equal? (depth program) 1))
+;;eval test
 (mh-query
  10 1
  (define lazy-program ((grammar-xrp gen-program)))
  (define program (lazy-list->all-list lazy-program))
  program
- (equal? (depth program) 1))
+ (equal? (eval program) #t))
  
 ;;(define testp (gen-program))
 ;;(pretty-print (map (lambda (x) (lazy-list->list testp x)) (range 0 (compute-depth testp))))
