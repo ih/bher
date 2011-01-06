@@ -21,7 +21,9 @@
            [db (pretty-print (list "new program" new-program))]
            [abstraction-fw-prob (second ret1)]
            [abstraction-bw-prob (third ret1)]
+           [db (pretty-print (list "scoring new program" new-program))]
            [new-program-score (scorer '() new-program)]
+           [db (pretty-print (list "scoring old program" new-program))]
            [old-program-score (scorer '() program)])
       (list new-program (+ abstraction-fw-prob new-program-score) (+ abstraction-bw-prob old-program-score))))) 
 
@@ -31,7 +33,9 @@
     (let* ([lazy-program (list->lazy-list program)]
            [temps-nfqp (make-temps-nfqp lazy-program grammar)]
            [depths (map list (iota (compute-depth lazy-program)))]
-           [states (smc-core depths 100 10 temps-nfqp)]
+           [db (pretty-print "new call to scorer")]
+           [states (smc-core depths 1 10 temps-nfqp)]
+
            ;;all particles should be equal, make sure throw error if they are not
            [score (mcmc-state->score (uniform-draw states))])
       score)))
@@ -46,12 +50,15 @@
 (define (make-stateless-xrp xrp-name sampler scorer . proposal-support)
   (make-xrp xrp-name
             (lambda (stats hyperparams args) ;;sample
-              (let ((value (apply sampler args)))
+              (let ((value (apply sampler args))
+                    [db (if (equal? xrp-name "grammar-xrp") (pretty-print "wrapped sampler") '())])
                 (list value stats (scorer args value))))
             (lambda (value stats hyperparams args) ;;incr-stats
-              (list value stats (scorer args value)))
+              (let ([db (if (equal? xrp-name "grammar-xrp") (pretty-print "incr-stats") '())])
+              (list value stats (scorer args value))))
             (lambda (value stats hyperparams args) ;;decr-stats
-              (list value stats (scorer args value)))
+              (let ([db (if (equal? xrp-name "grammar-xrp") (pretty-print "decr-stats") '())])
+                (list value stats (scorer args value))))
             'scorer;;FIXME
             '() ;;init-stats
             '() ;;hyperparams

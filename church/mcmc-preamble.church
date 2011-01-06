@@ -172,54 +172,57 @@
  
 ;;this does the smc without finalizing, so that we can either get the query values or the scores (etc).
 (define (smc-core temps popsize lag temps->nfqp)
-  (let smc ((temps temps) ;;FIXME: rest temps?
-            (population (repeat popsize (lambda () (begin
-                                                     (reset-store-xrp-draws) ;;FIXME!! this is to avoid accumulating xrp-draws...
-                                                     (rejection-initializer (apply temps->nfqp (first temps)))))))
-            (weights (make-list popsize 0)))
+  (let ([original-temps temps]) ;; used in case of collapse
+    (let smc ((temps temps) ;;FIXME: rest temps?
+              (population (repeat popsize (lambda () (begin
+                                                       (reset-store-xrp-draws) ;;FIXME!! this is to avoid accumulating xrp-draws...
+                                                       (rejection-initializer (apply temps->nfqp (first temps)))))))
+              (weights (make-list popsize 0)))
 
-    (let* (;;(dummy (display (map mcmc-state->query-value population))) (dummy (display "\n"))
-           ;;step forward temps.
-           ;;(db (pretty-print (list "the temp" (first temps))))
-           (rets (map (lambda (state) (counterfactual-update state (apply temps->nfqp (first temps)))) population))
+      (let* (;;(dummy (display (map mcmc-state->query-value population))) (dummy (display "\n"))
+             ;;step forward temps.
+             ;;(db (pretty-print (list "the temp" (first temps))))
+             (rets (map (lambda (state) (counterfactual-update state (apply temps->nfqp (first temps)))) population))
 
-           ;;(db (pretty-print "after the cf"))
-           (new-population (map first rets))
-           (cd-bw/fw (map second rets))
-           (weights (map (lambda (old-weight old-state new-state cd-bw/fw) (+ old-weight
-                                                                               (- (mcmc-state->score new-state) (mcmc-state->score old-state))
-                                                                             cd-bw/fw))
-                          weights
-                          population
-                         new-population
-                          cd-bw/fw))
-           
-           ;;resample and reset weights (optional).
-           (resample-distribution (map exp (log-normalize weights)))
-           (collapse? (nan? (first resample-distribution)))
-           (new2-population (if collapse?
-                                (let ([db (pretty-print (list "collapse!!!" weights resample-distribution))])
-                                  '())
-                                (repeat popsize (lambda () (begin
-                                                             (reset-store-xrp-draws) ;;FIXME!! this is to avoid accumulating xrp-draws...
-                                                             (multinomial new-population resample-distribution))))))
-           (weights (make-list popsize 0))
-           
-           ;;rejuvenate using kernel.
-           (kernel (repeat-kernel lag (make-mh-kernel (lambda (state) (basic-proposal-distribution state (apply temps->nfqp (first temps))))
-                                                               mcmc-state->score)))
-           (new3-population (map kernel new2-population)))
+             ;;(db (pretty-print "after the cf"))
+             (new-population (map first rets))
+             (cd-bw/fw (map second rets))
+             (weights (map (lambda (old-weight old-state new-state cd-bw/fw) (+ old-weight
+                                                                                (- (mcmc-state->score new-state) (mcmc-state->score old-state))
+                                                                                cd-bw/fw))
+                           weights
+                           population
+                           new-population
+                           cd-bw/fw))
+             
+             ;;resample and reset weights (optional).
+             (resample-distribution (map exp (log-normalize weights)))
+             (collapse? (nan? (first resample-distribution))))
+        (if collapse?
+            (let ([db (pretty-print (list "collapse!!!" popsize))])
+              (smc-core original-temps (increase-population popsize) lag temps->nfqp))
+            (let* ([new2-population
+                    (repeat popsize (lambda ()
+                                      (begin
+                                        (reset-store-xrp-draws) ;;FIXME!! this is to avoid accumulating xrp-draws...
+                                        (multinomial new-population resample-distribution))))]
+                   [weights (make-list popsize 0)]
+                   ;;rejuvenate using kernel.
+                   [kernel (repeat-kernel lag (make-mh-kernel (lambda (state) (basic-proposal-distribution state (apply temps->nfqp (first temps))))
+                                                              mcmc-state->score))]
+                   [new3-population (map kernel new2-population)])
+              (begin ;;(map (lambda (x y) (begin (display "  ")(display x)(display "  ")(display y)(display "\n")))
+                ;;   (map mcmc-state->query-value new3-population)
+                ;; (map mcmc-state->score new3-population))
+                ;;(display "\n")
+                ;;loop if there are any temps left.
+                ;;      (if (or collapse? (null? (rest temps)))
+                (if (null? (rest temps))
+                    new3-population
+                    (smc (rest temps) new3-population weights)))))))))
 
-      (begin ;;(map (lambda (x y) (begin (display "  ")(display x)(display "  ")(display y)(display "\n")))
-               ;;   (map mcmc-state->query-value new3-population)
-                 ;; (map mcmc-state->score new3-population))
-             ;;(display "\n")
-      ;;loop if there are any temps left.
-;;      (if (or collapse? (null? (rest temps)))
-      (if (null? (rest temps))
-          new3-population
-          (smc (rest temps) new3-population weights)))))  )
-
+(define (increase-population old-pop-size)
+  (* old-pop-size 2))
 
  (define (log-sum-exp . log-vals)
    (let* ([max-log-val (apply max log-vals)])
