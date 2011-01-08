@@ -143,21 +143,27 @@
 ;;;mh test using grammar-xrp
 ;; (define t #t)
 ;; (define f #f)
-;;depth test
+;;;depth test
 ;; (mh-query
 ;;  10 1
 ;;  (define lazy-program ((grammar-xrp gen-program)))
 ;;  (define program (lazy-list->all-list lazy-program))
 ;;  program
 ;;  (equal? (depth program) 1))
-;;eval test
+;;;eval test
+;; (mh-query
+;;  10 1
+;;  (define lazy-program ((grammar-xrp gen-program)))
+;;  (define program (lazy-list->all-list lazy-program))
+;;  program
+;;  (equal? (eval program) #t))
+;;;fix the starting state
 (mh-query
- 10 1
+ 10 2
  (define lazy-program ((grammar-xrp gen-program)))
  (define program (lazy-list->all-list lazy-program))
  program
  (equal? (eval program) #t))
- 
 ;;(define testp (gen-program))
 ;;(pretty-print (map (lambda (x) (lazy-list->list testp x)) (range 0 (compute-depth testp))))
 ;; (define testq (list->lazy-list '(lambda () (define F (lambda () t)) (if t f t))))

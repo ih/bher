@@ -51,6 +51,13 @@
         (rejection-initializer normal-form-proc)
         proposal-state)))
 
+;; (define (test-initializer normal-form-proc)
+;;   (let* ([te (lambda () (test-expr))]
+;;          [init-state (make-initial-mcmc-state)]
+;;          [test-state (list (first init-state) (pair 't te) (third init-state))])
+;;          test-state))
+        
+
 (define verbose-init #f)
 
 ;; initialize using rejection on highest temp
@@ -153,9 +160,15 @@
       (mcmc-loop kernel (kernel state) (- samples-left 1) (pair (mcmc-state->query-value state) samples))))
 
 (define (mh-query samples lag normal-form-proc)
+;;  (repeated-mcmc-query-core (lambda () (test-initializer normal-form-proc))
   (repeated-mcmc-query-core (lambda () (rejection-initializer normal-form-proc))
                             (basic-repeat-kernel lag normal-form-proc)
                             samples))
+
+;; (define (mh-fixed-start samples lag normal-form-proc)
+;;   (repeated-mcmc-query-core (lambda () (test-initializer normal-form-proc))
+;;                             (basic-repeat-kernel lag normal-form-proc)
+;;                             samples))
 
 (define (mh-query/annealed-init temps samples lag rej-steps temps->nfqp)
   (let ([normal-form-proc (apply temps->nfqp (first temps))])

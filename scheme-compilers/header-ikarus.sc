@@ -24,5 +24,7 @@
  (util)
  (sym)
  (scheme-tools repl)
+ (testing)
+
  )
 

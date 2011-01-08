@@ -190,7 +190,7 @@
 
      ;;note: this assumes that the fns (sample, incr-stats, decr-stats, etc) are church procedures.
      ;;FIXME: what should happen with the store when the sampler is a church random fn? should not accumulate stats/score since these are 'marginalized'.
-     (define (church-make-xrp address store xrp-name sample incr-stats decr-stats score init-stats hyperparams proposer support)
+     (define (church-make-xrp address store xrp-name sample incr-stats decr-stats score init-stats hyperparams proposer support . combo-xrp-flag)
        ;,(if *lazy*
        ;;FIXME!! only rebind args if lazy..
        (let* ((xrp-name (church-force address store xrp-name))

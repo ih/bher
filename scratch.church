@@ -1,3 +1,16 @@
-(let ((store (cons (first (mcmc-state->store state)) (cdr (mcmc-state->store state)))))
-  (church-apply (mcmc-state->address state) store proposer (list args value)))
-(eval '(uniform-draw '(1 2 3)))
+(+ 2 2)
+(test-expr)
+;;(define* (f a (b #f)) (list a b))
+(if #f 1 0)
+;; (define (f x)
+;;   (define (g y)
+;;     (+ x y))
+;;   (g 3))
+;; (f 4)
+
+(define (f lst)
+  (cond [(null? lst) '()]
+        [(null? (rest lst)) (rest lst)]
+        [else (rest lst)]))
+
+(f '())
