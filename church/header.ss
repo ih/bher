@@ -178,8 +178,8 @@
      ;; (define addbox-size trie-size)
      ;; (define addbox-empty? trie-empty?)
 
-     (define (make-xrp-draw address value xrp-name proposer-thunk ticks score support)
-       (list address value xrp-name proposer-thunk ticks score support))
+     (define (make-xrp-draw address value xrp-name proposer-thunk ticks score support . internal-state)
+       (list address value xrp-name proposer-thunk ticks score support (if (null? internal-state) '() (first internal-state))))
      (define xrp-draw-address first)
      (define xrp-draw-value second)
      (define xrp-draw-name third)
@@ -187,6 +187,7 @@
      (define xrp-draw-ticks fifth) ;;ticks is a pair of timer tick when this xrp-draw is touched and previous touch if any.
      (define xrp-draw-score sixth)
      (define xrp-draw-support seventh)
+     (define xrp-draw-internal-state eighth)
 
      ;;note: this assumes that the fns (sample, incr-stats, decr-stats, etc) are church procedures.
      ;;FIXME: what should happen with the store when the sampler is a church random fn? should not accumulate stats/score since these are 'marginalized'.
@@ -201,7 +202,11 @@
               (init-stats (church-force address store init-stats))
               (hyperparams (church-force address store hyperparams))
               (proposer (church-force address store proposer))
-              (support (church-force address store support)))
+              (support (church-force address store support))
+              [combo-xrp-flag (if (null? combo-xrp-flag) #f (first combo-xrp-flag))]
+              ;;[db (pretty-print (list "combo-flag" combo-xrp-flag))]
+              ;;[combo-xrp-flag #f]
+              [internal-nfqp (if (null? combo-xrp-flag) 'error (make-internal-nfqp sample))])
        (return-with-store
         store
         (let* ((ret (pull-outof-addbox (store->xrp-stats store) address))
@@ -230,6 +235,9 @@
             (let* ((tmp (pull-outof-addbox (store->xrp-draws store) address)) ;;FIXME!! check if xrp-address has changed?
                    (old-xrp-draw (car tmp))
                    ;;[db (pretty-print (list "inside xrp" xrp-name old-xrp-draw))]
+                   ;;[db (if combo-xrp-flag (pretty-print (list "combo-xrp nfqp" (lazy-list->all-list ((rest (internal-nfqp)) address store)))) '())]
+                   [db (if combo-xrp-flag (pretty-print (list "combo-xrp nfqp" internal-nfqp)) #f)]
+                   ;;[internal-state (get/create-internal-state combo-xrp-flag old-xrp-draw)]
                    (rest-xrp-draws (cdr tmp))
                    (old-tick (if (eq? #f old-xrp-draw) '() (first (xrp-draw-ticks old-xrp-draw)))))
               ;;if this xrp-draw has been touched on this tick, as in mem, don't change score or stats.
@@ -273,6 +281,20 @@
                                                 (store->tick store)
                                                 (store->enumeration-flag store))))
                     (return-with-store store new-store value))))))))  )
+
+     (define (get/create-internal-state combo-xrp-flag old-xrp-draw)
+       (if combo-xrp-flag
+           (let ([internal-state (xrp-draw-internal-state old-xrp-draw)])
+             (if (null? internal-state)
+                 '()
+                 internal-state))))
+     
+     ;;used in the creation of an xrp that has a sampler that uses xrps
+     (define (make-internal-nfqp sampler)
+       (let* ([condition #t]
+              [query-thunk (lambda (address store) (lazy-list->all-list (first (sampler address store 'no-stats 'no-hyper-params '()))))]) ;;observe the query and the condition are independent, FIXME assumes sampler does not take any arguments, if you want to change this you have to move the call to church-make-internal-nfqp into the lambda returned by church-make-xrp
+       (lambda () (begin (pair condition query-thunk)))))
+       
 
        ;;mcmc-state structures consist of a store (which captures xrp state, etc), a score (which includes constraint enforcement), and a return value from applying a nfqp.
        ;;constructor/accessor fns: mcmc-state->xrp-draws, mcmc-state->score, mcmc-state->query-value, church-make-initial-mcmc-state.

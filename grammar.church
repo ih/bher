@@ -158,12 +158,15 @@
 ;;  program
 ;;  (equal? (eval program) #t))
 ;;;fix the starting state
+(define (f)
 (mh-query
  10 2
  (define lazy-program ((grammar-xrp gen-program)))
  (define program (lazy-list->all-list lazy-program))
  program
- (equal? (eval program) #t))
+ (equal? (eval program) #t)))
+(f)
+;;(repeat 20 f)
 ;;(define testp (gen-program))
 ;;(pretty-print (map (lambda (x) (lazy-list->list testp x)) (range 0 (compute-depth testp))))
 ;; (define testq (list->lazy-list '(lambda () (define F (lambda () t)) (if t f t))))
