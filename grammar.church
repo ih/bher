@@ -160,8 +160,8 @@
 ;;;fix the starting state
 (define (f)
 (mh-query
- 10 2
- (define lazy-program ((grammar-xrp gen-program)))
+ 10 20
+ (define lazy-program (gen-program))
  (define program (lazy-list->all-list lazy-program))
  program
  (equal? (eval program) #t)))

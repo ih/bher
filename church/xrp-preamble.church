@@ -1,18 +1,5 @@
 ;; authors: noah goodman (with help from jeff siskind, andreas stuhlmuller)
 
-;;this is the church xrp-preamble, that creates all standard xrps. some primitive pieces (samplers, scorers) are added in the scheme header.
-
-(define (grammar-xrp grammar)
-  (let* ([scorer (make-scorer grammar)]
-         [proposer (make-proposer scorer)]
-         [combo-xrp #t]) ;;grammar contains xrps
-    (make-stateless-xrp
-     "grammar-xrp"
-     grammar
-     scorer
-     proposer
-     'no-support
-     combo-xrp))) ;;needs proposal support?
 
 ;;creates a function that takes operands and the old xrp-value and returns a program, proposal-fw-score, and proposal-bw-score
 (define (make-proposer scorer)
@@ -48,32 +35,10 @@
 ;;    (lambda () (pair (lazy-equal? (grammar) target-program temp) (lambda () 'error)))))
     (lambda () (begin (define p (grammar)) (pair (lazy-equal? p target-program temp) (lambda () (first (lazy-list->list p temp))))))))
 
-;;for constructing xrps that may use "internal" xrps to compute its value, proposing a new value may either be a function directly on the xrp-value or doing a basic random-choice proposal on the value (that was created using xrps).
-;; (define (make-super-xrp xrp-name sampler non-basic-proposal)
-;;   (let* ([scorer (make-scorer sampler)]
-;;          [basic-proposer (make-
-;;          [proposer (make-super-xrp-proposer sampler non-basic-proposer internal-state)])
-;;     (make-stateless-xrp
-;;      xrp-name
-;;      sampler
-;;      scorer
-;;      proposer)))
-
-;; ;;;either make a basic-proposal or a non-basic proposal (e.g. abstraction move), this could be generalized to take a list of proposers
-;; (define (make-super-xrp-proposer non-basic-proposer)
-;;   (let ([basic-proposer (lambda (old-value) 
-;;   (lambda (operands old-value)
-;;     (if (flip)
-;;         (non-basic-proposer old-value)
-;;         (basic-proposal-distribution internal-state 
-;;     )
-
 ;;for constructing 'erp-like' xrps that don't have any hyperparams or stats.
-
 (define (make-stateless-xrp xrp-name sampler scorer . optional-args)
   (let ([proposer (get-proposer optional-args)]
-        [support (get-support optional-args)]
-        [combo-xrp (get-combo-flag optional-args)])
+        [support (get-support optional-args)])
     (make-xrp xrp-name
               (lambda (stats hyperparams args) ;;sample
                 (let ((value (apply sampler args))
@@ -89,20 +54,14 @@
               '() ;;init-stats
               '() ;;hyperparams
               proposer
-              support
-              combo-xrp)))
+              support)))
+              
 (define (get-proposer args)
     (if (null? args) '() (first args)))
 (define (get-support args)
   (cond [(null? args) '()]
         [(null? (rest args)) '()]
-        [(equal? (second args) 'no-support) '()]
         [else (let ((pr (second args))) (lambda (stats hyperparams args) (pr args)))]))
-(define (get-combo-flag args)
-  (cond [(null? args) #f]
-        [(null? (rest args)) #f]
-        [(null? (rest (rest args))) #f]
-        [else (third args)]))
 
 
 (define flip (make-stateless-xrp 'flip
