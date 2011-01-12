@@ -23,30 +23,31 @@
 ;;        [cd-bw/fw (second ret2)])
 ;;    (list (acceptance-prob cd-bw/fw fw-prob bw-prob) proposal-state)))
 
-
+;;should return a list of interventions so run-with-proposer and run-xrp-proposer should return lists of interventio
 (define (propose-interventions xrp-draws with-proposer-calls state)
-  (cond [(none? xrp-draws) (select+run-proposer with-proposer-calls state)]
-        [(none? with-proposer-calls) (select+run-proposer xrp-draws state)]
-        [else (select+run-proposer (select-proposal-type xrp-draws with-proposer-calls) state)]))
+  (cond [(none? xrp-draws) (run-with-proposer with-proposer-calls state)]
+        [(none? with-proposer-calls) (run-xrp-proposer xrp-draws state)]
+        [else (if (flip)
+                  (run-with-proposer with-proposer-calls state)
+                  (run-xrp-proposer xrp-draws state))]))
+
 (define none? addbox-empty?)
 
-(define (select-proposal-type xrp-draws with-proposer-calls)
-  (if (flip) xrp-draws with-proposer-calls))
+(define (addbox-draw-item addbox) (rest (uniform-draw (addbox->alist addbox))))
 
-(define (draw/call-proposer chosen)
-  (cond [(xrp-draw? chosen) (xrp-draw-proposer chosen)]
-        [(with-proposer-call? chosen) (with-proposer-call-proposer chosen)]
-        [else (error 'draw/call-propser "object needs to be either an xrp-draw or a with-proposer-call" chosen)]))
+(define (run-with-proposer with-proposer-calls state)
+  (let* ([chosen (addbox-draw-item with-proposer-calls)])
+    ((with-proposer-call-proposer chosen) state)))
 
-(define (select+run-proposer addbox state)
-  (let* ([chosen (rest (uniform-draw (addbox->alist addbox)))] ;;rest is because xrp-draws is an addbox, so address is first
-         [ret1 ((draw/call-proposer chosen) state)]
+(define (run-xrp-proposer xrp-draws state)
+  (let* ([chosen (addbox-draw-item xrp-draws)]
+         [ret1 ((xrp-draw-proposer chosen) state)]
          [proposed-val (first ret1)]
          [db (pretty-print (list "proposed-value proposed-val" (xrp-draw-address chosen) proposed-val))]
          [proposal-fw-score (second ret1)]
          [proposal-bw-score (third ret1)]
          (db (pretty-print "basic-pd cfupdate")))
-    (list proposal-fw-score proposal-bw-score (pair chosen proposed-val))))
+    (list proposal-fw-score proposal-bw-score (list (pair chosen proposed-val)))))
 
 (define (basic-proposal-distribution state normal-form-proc)
   (let* ([xrp-draws (mcmc-state->xrp-draws state)]
@@ -57,7 +58,7 @@
                [proposal-fw-score (first scores+interventions)]
                [proposal-bw-score (second scores+interventions)]
                [interventions (third scores+interventions)]
-               [ret2 (counterfactual-update state normal-form-proc interventions)]
+               [ret2 (apply counterfactual-update (append (list state normal-form-proc) interventions))]
                [proposal-state (first ret2)]
                [cd-bw/fw (second ret2)]
                [ind-fw (- (log (addbox-size (mcmc-state->xrp-draws state))))]

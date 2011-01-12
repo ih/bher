@@ -169,7 +169,7 @@
      (define alist->addbox (lambda (alist) alist))
      (define addbox-size alist-size)
      (define addbox-empty? alist-empty?)
-
+     
      ;; trie addbox
      ;; (define make-addbox make-empty-trie)
      ;; (define add-into-addbox trie-insert)
@@ -180,13 +180,10 @@
      ;; (define addbox-empty? trie-empty?)
 
      (define (make-with-proposer-call address value proposer-thunk)
-       (list 'proposer-call address value proposer-thunk))
+       (list address value proposer-thunk))
 
-     (define with-proposer-call-proposer fourth)
+     (define with-proposer-call-proposer third)
 
-     (define (with-proposer-call? object) (if (list? object) (eq? (first object) 'proposer-call) #f))
-     
-     (define (xrp-draw? object) (not (with-proposer-call? object)))
      
      (define (make-xrp-draw address value xrp-name proposer-thunk ticks score support)
        (list address value xrp-name proposer-thunk ticks score support))

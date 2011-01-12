@@ -7,6 +7,11 @@
  (list a b)
  (foo))
 
+;; (define (xor-proposer state)
+;;   (let* ([xrp-draws (mcmc-state->xrp-draws mcmc-state)]
+;;          [interventions (map flip-intervention xrp-draws)])
+;;     (list 0.0 0.0 interventions)))
+
 
 
 ;; (mh-query
@@ -15,6 +20,6 @@
 ;;  (define a (flip))
 ;;  (define b (flip))
           
-;;  (define foo (with-proposer (lambda () (xor a b)))
+;;  (define foo (with-proposer (lambda () (xor a b)) xor-proposer)
 ;;  (list a b)
 ;;  (foo))
