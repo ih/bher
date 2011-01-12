@@ -112,13 +112,14 @@
 
 ;;;
      ;;stuff for xrps (and dealing with stores):
-     (define (make-store xrp-draws xrp-stats score tick enumeration-flag) (list xrp-draws xrp-stats score tick enumeration-flag))
-     (define (make-empty-store) (make-store (make-addbox) (make-addbox) 0.0 0 #f))
+     (define (make-store xrp-draws xrp-stats score tick enumeration-flag with-proposer-calls) (list xrp-draws xrp-stats score tick enumeration-flag with-proposer-calls))
+     (define (make-empty-store) (make-store (make-addbox) (make-addbox) 0.0 0 #f (make-addbox)))
      (define store->xrp-draws first)
      (define store->xrp-stats second)
      (define store->score third)
      (define store->tick fourth)
      (define store->enumeration-flag fifth) ;;FIXME: this is a hacky way to deal with enumeration...
+     (define store->with-proposer-calls sixth)
 
      (define (church-reset-store-xrp-draws address store)
        (return-with-store store
@@ -126,7 +127,8 @@
                                       (store->xrp-stats store)
                                       (store->score store)
                                       (store->tick store)
-                                      (store->enumeration-flag store))
+                                      (store->enumeration-flag store)
+                                      (store->with-proposer-calls store))
                           'foo))
 
      
@@ -177,6 +179,15 @@
      ;; (define addbox-size trie-size)
      ;; (define addbox-empty? trie-empty?)
 
+     (define (make-with-proposer-call address value proposer-thunk)
+       (list 'proposer-call address value proposer-thunk))
+
+     (define with-proposer-call-proposer fourth)
+
+     (define (with-proposer-call? object) (if (list? object) (eq? (first object) 'proposer-call) #f))
+     
+     (define (xrp-draw? object) (not (with-proposer-call? object)))
+     
      (define (make-xrp-draw address value xrp-name proposer-thunk ticks score support)
        (list address value xrp-name proposer-thunk ticks score support))
      (define xrp-draw-address first)
@@ -214,7 +225,8 @@
                           (add-into-addbox reststatsbox address (list init-stats tick))
                           (store->score store)
                           tick
-                          (store->enumeration-flag store))))
+                          (store->enumeration-flag store)
+                          (store->with-proposer-calls store))))
         (let* ((xrp-address address)
                (proposer (if (null? proposer)
                              (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
@@ -271,7 +283,8 @@
                                                 (add-into-addbox rest-statsbox xrp-address new-stats)
                                                 (+ (store->score store) incr-score)
                                                 (store->tick store)
-                                                (store->enumeration-flag store))))
+                                                (store->enumeration-flag store)
+                                                (store->with-proposer-calls store))))
                     (return-with-store store new-store value))))))))  )
 
      
@@ -287,7 +300,7 @@
        (define mcmc-state->store first)
        (define mcmc-state->address third)
        (define (mcmc-state->xrp-draws state) (store->xrp-draws (mcmc-state->store state)))
-       (define (mcmc-state->with-proposer-calls state) '())
+       (define (mcmc-state->with-proposer-calls state) (store->with-proposer-calls (mcmc-state->store state)))
        (define (mcmc-state->score state)
          (if (not (eq? #t (first (second state))))
              -inf.0 ;;enforce conditioner.
@@ -312,7 +325,7 @@
        ;;clears the xrp-draws since it is meant to happen when we begin enumeration (so none of the xrp-draws in store can be relevant).
        (define (church-make-initial-enumeration-state address store)
          ;;FIXME: storethreading.
-         (make-mcmc-state (make-store '() (store->xrp-stats store) (store->score store) (store->tick store) #t)
+         (make-mcmc-state (make-store '() (store->xrp-stats store) (store->score store) (store->tick store) #t (make-addbox))
                           'init-val address))
 
        ;;this is the key function for doing mcmc -- update the execution of a procedure, with optional changes to xrp-draw values.
@@ -341,7 +354,7 @@
                                           0.0 ;;NOTE: incremental differs here ;;(store->score (mcmc-state->store state))
                                           new-tick ;;increment the generation counter.
                                           (store->enumeration-flag (mcmc-state->store state))
-                                          ))
+                                          (store->with-proposer-calls (mcmc-state->store state))))
                ;; (db (pretty-print (list "interv-store"  interv-store)))
                 ;;application of the nfqp happens with interv-store, which is a fresh pair, so won't mutate original state.
                 ;;after application the store must be captured and put into the mcmc-state.
@@ -395,7 +408,8 @@
                              (store->xrp-stats store)
                              (store->score store)
                              (store->tick store)
-                             (store->enumeration-flag store))
+                             (store->enumeration-flag store)
+                             (store->with-proposer-calls store))
                  (second draws-bw/fw))))
 
 

@@ -25,6 +25,6 @@
  (sym)
  (scheme-tools repl)
  (testing)
-
+ (xitomatl match)
  )
 

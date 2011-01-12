@@ -21,3 +21,16 @@
  (define v (f))
  v
  (equal? v 'a))
+
+(define (g)
+  (list 'a 'b 'c))
+;; (define (h)
+;;   (match-let (((x y z) (g))
+;;               (q (+ 2 2)))
+;;              (list y q)))
+
+(match-let (((a b c) '(1 2 3))
+             (#(d (b (f))) '#(4 (5 (6)))))
+   (list a b c d f))
+
+             

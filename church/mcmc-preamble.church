@@ -31,9 +31,12 @@
 (define none? addbox-empty?)
 
 (define (select-proposal-type xrp-draws with-proposer-calls)
-  (pretty-print "error: should only have xrp-draws so far"))
+  (if (flip) xrp-draws with-proposer-calls))
 
-(define draw/call-proposer xrp-draw-proposer)
+(define (draw/call-proposer chosen)
+  (cond [(xrp-draw? chosen) (xrp-draw-proposer chosen)]
+        [(with-proposer-call? chosen) (with-proposer-call-proposer chosen)]
+        [else (error 'draw/call-propser "object needs to be either an xrp-draw or a with-proposer-call" chosen)]))
 
 (define (select+run-proposer addbox state)
   (let* ([chosen (rest (uniform-draw (addbox->alist addbox)))] ;;rest is because xrp-draws is an addbox, so address is first
@@ -44,8 +47,6 @@
          [proposal-bw-score (third ret1)]
          (db (pretty-print "basic-pd cfupdate")))
     (list proposal-fw-score proposal-bw-score (pair chosen proposed-val))))
-
-
 
 (define (basic-proposal-distribution state normal-form-proc)
   (let* ([xrp-draws (mcmc-state->xrp-draws state)]
