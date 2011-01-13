@@ -162,6 +162,13 @@
      ;; doesn't attempt to maintain order.
 
      ;; alist addbox
+     (define (add/replace-into-addbox addbox address new-entry)
+       (let* ([present (pull-outof-addbox addbox address)])
+         (if (equal? present '(#f))
+             (add-into-addbox addbox address new-entry)
+             (add-into-addbox (rest present) address new-entry))))
+
+              
      (define add-into-addbox alist-insert)
      (define pull-outof-addbox alist-pop)
      (define make-addbox make-empty-alist)
@@ -183,6 +190,26 @@
        (list address value proposer-thunk))
 
      (define with-proposer-call-proposer third)
+
+     ;;creates a with-proposer-call and places it into the store everytime the proc is called, this with-proposer-call can be used to make proposals in basic-proposal-distribution, assumes proc is a church thunk for now
+     (define (church-with-proposer address store proc proposer)
+       (lambda (address store)
+         (let* ([with-proposer-calls (store->with-proposer-calls store)]
+                [value (proc address store)]
+                [new-call (make-with-proposer-call address value proposer)]
+                ;;[db (pretty-print (list "proposer-calls before " with-proposer-calls))]
+                [new-proposer-calls (add/replace-into-addbox with-proposer-calls address new-call)]
+                ;;[db (pretty-print (list "proposer-calls after " new-proposer-calls))]
+                [new-store (make-store (store->xrp-draws store)
+                                       (store->xrp-stats store)
+                                       (store->score store)
+                                       (store->tick store)
+                                       (store->enumeration-flag store)
+                                       new-proposer-calls)]) ;;only thing that changes is new-proposer-calls
+           (return-with-store store new-store value))))
+
+
+       
 
      
      (define (make-xrp-draw address value xrp-name proposer-thunk ticks score support)
