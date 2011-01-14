@@ -37,10 +37,10 @@
 
 (define (run-with-proposer with-proposer-calls state)
   (let* ([chosen (addbox-draw-item with-proposer-calls)])
-    ((with-proposer-call-proposer chosen) state)))
+    ((with-proposer-call-proposer chosen) state (with-proposer-call-address chosen) (with-proposer-call-value chosen))))
 
 (define (run-xrp-proposer xrp-draws state)
-  (let* (;;[db (pretty-print "xrp-proposer")]
+  (let* ([db (pretty-print "xrp-proposer")]
          [chosen (addbox-draw-item xrp-draws)]
          [ret1 ((xrp-draw-proposer chosen) state)]
          [proposed-val (first ret1)]

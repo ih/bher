@@ -7,7 +7,7 @@
  (list a b)
  (foo))
 
-(define (xor-proposer state)
+(define (xor-proposer state address value)
   (let* ([xrp-draws (map rest (mcmc-state->xrp-draws state))]
          [interventions (map flip-intervention xrp-draws)]
          [db (pretty-print "xor-proposer")])
