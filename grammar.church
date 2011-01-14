@@ -157,15 +157,53 @@
 ;;  (define program (lazy-list->all-list lazy-program))
 ;;  program
 ;;  (equal? (eval program) #t))
-;;;fix the starting state
-(define (f)
+
+;;;abstraction-proposer
+(define (make-abstraction-proposer grammar)
+  (lambda (address proc state)
+    (let* (;;;(de)compress the program
+           [program (mcmc-state->query-value state)]
+           [ret1 (abstraction-move program)]
+           [new-program (first ret1)]
+           [lazy-new-program (list->lazy-list new-program)]
+           [db (pretty-print (list "new program" new-program))]
+           [abstraction-fw-prob (second ret1)]
+           [abstraction-bw-prob (third ret1)]
+         ;;;make nfqp out of the with-procedure proc
+           [temps-nfqp (make-temps-nfqp lazy-new-program grammar)]
+           [depths (map list (iota (compute-depth lazy-new-program)))]
+           [states (smc-core depths 1 10 temps-nfqp address)]
+         ;;;get the xrps and return them as interventions
+           [xrp-draws (mcmc-state->xrp-draws (first states))] ;;;choosing the first state is arbitrary, should all be same
+           [interventions (map (lambda (xrp-draw) (pair xrp-draw (xrp-draw-value xrp-draw))) xrp-draws)])
+      (list abstraction-fw-prob abstraction-bw-prob interventions))))
+
+
+;;      [db (pretty-print (list "scoring new program" new-program))]
+    ;;      [new-program-score (scorer '() new-program)]
+    ;;      [db (pretty-print (list "scoring old program" new-program))]
+    ;;      [old-program-score (scorer '() program)])
+    ;; (list new-program (+ abstraction-fw-prob new-program-score) (+ abstraction-bw-prob old-program-score)))) 
+         
+
 (mh-query
  10 20
- (define lazy-program (gen-program))
+ (define lazy-grammar gen-program)
+ (define lazy-program (lazy-grammar))
  (define program (lazy-list->all-list lazy-program))
  program
- (equal? (eval program) #t)))
-(f)
+ (equal? (eval program) #t))
+
+
+
+;; (mh-query
+;;  10 20
+;;  (define lazy-grammar (with-proposer gen-program (make-abstraction-proposer gen-program)))
+;;  (define lazy-program (lazy-grammar))
+;;  (define program (lazy-list->all-list lazy-program))
+;;  program
+;;  (equal? (eval program) #t))
+
 ;;(repeat 20 f)
 ;;(define testp (gen-program))
 ;;(pretty-print (map (lambda (x) (lazy-list->list testp x)) (range 0 (compute-depth testp))))

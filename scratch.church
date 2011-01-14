@@ -1,7 +1,7 @@
-(+ 2 2)
-(test-expr)
+;;(+ 2 2)
+;;(test-expr)
 ;;(define* (f a (b #f)) (list a b))
-(if #f 1 0)
+;;(if #f 1 0)
 ;; (define (f x)
 ;;   (define (g y)
 ;;     (+ x y))
@@ -15,22 +15,32 @@
 
 ;; (f '())
 
- (define (f) (uniform-draw '(a b c)))
-(mh-query
- 10 10
- (define v (f))
- v
- (equal? v 'a))
+;;  (define (f) (uniform-draw '(a b c)))
+;; (mh-query
+;;  10 10
+;;  (define v (f))
+;;  v
+;;  (equal? v 'a))
 
-(define (g)
-  (list 'a 'b 'c))
+;; (define (g)
+;;   (list 'a 'b 'c))
 ;; (define (h)
 ;;   (match-let (((x y z) (g))
 ;;               (q (+ 2 2)))
 ;;              (list y q)))
 
-(match-let (((a b c) '(1 2 3))
-             (#(d (b (f))) '#(4 (5 (6)))))
-   (list a b c d f))
+;; (match-let (((a b c) '(1 2 3))
+;;              (#(d (b (f))) '#(4 (5 (6)))))
+;;    (list a b c d f))
 
-             
+(define (thunk)
+  (mh-query
+   10 10
+   (define a (if (flip) 1 0))
+   (define b (if (flip) 1 0))
+
+   a
+
+   (= (+ a b) 2)))
+
+;;(thunk)
