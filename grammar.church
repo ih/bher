@@ -1,6 +1,6 @@
 ;;;GRAMMAR
-(define MAX-FUNCS 4)
-(define MAX-ARITY 4)
+(define MAX-FUNCS 1)
+(define MAX-ARITY 1)
 
 (define (gen-program)
   (let* ([num-of-funcs (sample-integer MAX-FUNCS)]
@@ -56,7 +56,7 @@
 
 (define (gen-expr vars function-signatures)
   (cond [(and (null? vars) (null? function-signatures))
-         (sample (multinomial (list (lambda () (gen-if vars function-signatures)) gen-bool) (list 1/4 3/4)))]
+         (sample (multinomial (list (lambda () (gen-if vars function-signatures)) gen-bool) (list 1/100 99/100)))]
         [(null? vars)
          (sample (multinomial (list (lambda () (gen-if vars function-signatures)) gen-bool (lambda () (gen-application vars function-signatures))) (list 1/8 3/4 1/8)))]
         [(null? function-signatures)
@@ -160,7 +160,7 @@
 
 ;;;abstraction-proposer
 (define (make-abstraction-proposer grammar)
-  (lambda (address proc state)
+  (lambda (state address value)
     (let* (;;;(de)compress the program
            [program (mcmc-state->query-value state)]
            [ret1 (abstraction-move program)]
@@ -172,13 +172,42 @@
          ;;;make nfqp out of the with-procedure proc
            [temps-nfqp (make-temps-nfqp lazy-new-program grammar)]
            [depths (map list (iota (compute-depth lazy-new-program)))]
-           [states (smc-core depths 1 10 temps-nfqp address)]
+           ;;[db (pretty-print (list "entering the core" address))]
+           [db (pretty-print (list "entering the core uncompressed-state xrps" address (mcmc-state->xrp-draws state)))]
+;;           [states (smc-core depths 1 10 temps-nfqp address)]
+           [states (smc-core depths 1 10 temps-nfqp '())]
          ;;;get the xrps and return them as interventions
+           ;;[db (pretty-print (list "exiting the core" address))]
+           [db (pretty-print (list "exiting the core uncompressed-state xrps" (mcmc-state->xrp-draws state)))]
            [xrp-draws (mcmc-state->xrp-draws (first states))] ;;;choosing the first state is arbitrary, should all be same
-           [interventions (map (lambda (xrp-draw) (pair xrp-draw (xrp-draw-value xrp-draw))) xrp-draws)])
+           [interventions (map (make-interventions address) xrp-draws)]
+;;           [interventions (map (lambda (xrp-draw) (pair xrp-draw (xrp-draw-value xrp-draw))) xrp-draws)]
+           [db (pretty-print (list "interventions" interventions))])
       (list abstraction-fw-prob abstraction-bw-prob interventions))))
 
+;;;remove extra address made by call to nfqp thunk then return a p modified draw with the value as an intervention
+(define (make-interventions init-address)
+  (lambda (xrp-draw)
+    (let* ([address (xrp-draw-address xrp-draw)]
+           [new-address (adjust-address address init-address)]
+           [new-xrp-draw (make-xrp-draw new-address
+                                        (xrp-draw-value xrp-draw)
+                                        (xrp-draw-name xrp-draw)
+                                        (xrp-draw-proposer xrp-draw)
+                                        (xrp-draw-ticks xrp-draw)
+                                        (xrp-draw-score xrp-draw)
+                                        (xrp-draw-support xrp-draw))])
+      (pair new-xrp-draw (xrp-draw-value xrp-draw)))))
 
+(define (adjust-address address init-address)
+  (append (drop-right address 1) init-address))
+
+         
+                                      
+    
+    
+
+   
 ;;      [db (pretty-print (list "scoring new program" new-program))]
     ;;      [new-program-score (scorer '() new-program)]
     ;;      [db (pretty-print (list "scoring old program" new-program))]
@@ -186,14 +215,21 @@
     ;; (list new-program (+ abstraction-fw-prob new-program-score) (+ abstraction-bw-prob old-program-score)))) 
          
 
+;; (mh-query
+;;  10 20
+;;  (define lazy-grammar gen-program)
+;;  (define lazy-program (lazy-grammar))
+;;  (define program (lazy-list->all-list lazy-program))
+;;  program
+;;  (equal? (eval program) #t))
+
 (mh-query
  10 20
- (define lazy-grammar gen-program)
- (define lazy-program (lazy-grammar))
+ (define lazy-program ((with-proposer gen-program (make-abstraction-proposer gen-program))))
+
  (define program (lazy-list->all-list lazy-program))
  program
  (equal? (eval program) #t))
-
 
 
 ;; (mh-query

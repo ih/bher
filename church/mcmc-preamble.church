@@ -36,11 +36,12 @@
 (define (addbox-draw-item addbox) (rest (uniform-draw (addbox->alist addbox))))
 
 (define (run-with-proposer with-proposer-calls state)
-  (let* ([chosen (addbox-draw-item with-proposer-calls)])
+  (let* ([db (pretty-print "with-proposer")]
+         [chosen (addbox-draw-item with-proposer-calls)])
     ((with-proposer-call-proposer chosen) state (with-proposer-call-address chosen) (with-proposer-call-value chosen))))
 
 (define (run-xrp-proposer xrp-draws state)
-  (let* ([db (pretty-print "xrp-proposer")]
+  (let* (;;[db (pretty-print "xrp-proposer")]
          [chosen (addbox-draw-item xrp-draws)]
          [ret1 ((xrp-draw-proposer chosen) state)]
          [proposed-val (first ret1)]
@@ -54,11 +55,13 @@
          [with-proposer-calls (mcmc-state->with-proposer-calls state)])
     (if (and (none? xrp-draws) (none? with-proposer-calls) trivial-proposal)
         (trivial-proposal state)
-        (let* ([scores+interventions (propose-interventions xrp-draws with-proposer-calls state)]
+        (let* (;;[db (pretty-print (list "before compression xrp-draw number" (length (store->xrp-draws (mcmc-state->store state))) (mcmc-state->query-value state) (mcmc-state->xrp-draws state)))]
+               [scores+interventions (propose-interventions xrp-draws with-proposer-calls state)]
                [proposal-fw-score (first scores+interventions)]
                [proposal-bw-score (second scores+interventions)]
                [interventions (third scores+interventions)]
-;;               [db (display (list "interventions" interventions))]
+               ;;"interventions about to do basic cfupdate" (length interventions) (map first interventions)
+               ;;[db (if (> (length interventions) 1) (pretty-print (list  "uncompressed-state xrp-draw number"  (mcmc-state->query-value state) (mcmc-state->xrp-draws state))) '())]
                [ret2 (apply counterfactual-update (append (list state normal-form-proc) interventions))]
                [proposal-state (first ret2)]
                [cd-bw/fw (second ret2)]
@@ -73,6 +76,19 @@
     (if (= -inf.0 (mcmc-state->score proposal-state))
         (rejection-initializer normal-form-proc)
         proposal-state)))
+
+(define (rejection-addressed-initializer normal-form-proc start-address)
+    (let* ([init-state (make-addressed-initial-mcmc-state start-address)]
+           [db (pretty-print (list "in addressed-initializer" init-state))]
+           [proposal-state (first (counterfactual-update init-state normal-form-proc))]) ;;don't care about bw/fw for init.
+      (if (= -inf.0 (mcmc-state->score proposal-state))
+          (rejection-addressed-initializer normal-form-proc start-address)
+          proposal-state)))
+  ;; (let ((proposal-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc))))
+  ;;       ;;(proposal-state (first (counterfactual-update (make-addressed-initial-mcmc-state start-address) normal-form-proc)))) ;;don't care about bw/fw for init.
+  ;;   (if (= -inf.0 (mcmc-state->score proposal-state))
+  ;;       (rejection-addressed-initializer normal-form-proc start-address)
+  ;;       proposal-state)))
 
 ;; (define (test-initializer normal-form-proc)
 ;;   (let* ([te (lambda () (test-expr))]
@@ -207,12 +223,16 @@
   (map mcmc-state->query-value (smc-core temps popsize lag temps->nfqp)))
  
 ;;this does the smc without finalizing, so that we can either get the query values or the scores (etc).
-(define (smc-core temps popsize lag temps->nfqp)
+(define (smc-core temps popsize lag temps->nfqp . start-address)
   (let ([original-temps temps]) ;; used in case of collapse
     (let smc ((temps temps) ;;FIXME: rest temps?
               (population (repeat popsize (lambda () (begin
                                                        (reset-store-xrp-draws) ;;FIXME!! this is to avoid accumulating xrp-draws...
-                                                       (rejection-initializer (apply temps->nfqp (first temps)))))))
+                                                       (if (null? start-address)
+                                                           (rejection-initializer (apply temps->nfqp (first temps)))
+                                                           (rejection-addressed-initializer (apply temps->nfqp (first temps)) (first start-address)))
+
+                                                       ))))
               (weights (make-list popsize 0)))
 
       (let* (;;(dummy (display (map mcmc-state->query-value population))) (dummy (display "\n"))
@@ -236,7 +256,9 @@
              (collapse? (nan? (first resample-distribution))))
         (if collapse?
             (let ([db (pretty-print (list "collapse!!!" popsize))])
-              (smc-core original-temps (increase-population popsize) lag temps->nfqp))
+              (if (null? start-address)
+                  (smc-core original-temps (increase-population popsize) lag temps->nfqp)
+                  (smc-core original-temps (increase-population popsize) lag temps->nfqp (first start-address))))
             (let* ([new2-population
                     (repeat popsize (lambda ()
                                       (begin
@@ -247,12 +269,12 @@
                    [kernel (repeat-kernel lag (make-mh-kernel (lambda (state) (basic-proposal-distribution state (apply temps->nfqp (first temps))))
                                                               mcmc-state->score))]
                    [new3-population (map kernel new2-population)])
-              (begin ;;(map (lambda (x y) (begin (display "  ")(display x)(display "  ")(display y)(display "\n")))
-                ;;   (map mcmc-state->query-value new3-population)
-                ;; (map mcmc-state->score new3-population))
+              (begin ;;(map (lambda (x y) (begin (display " ")(display x)(display " ")(display y)(display "\n")))
+                 ;;(map mcmc-state->query-value new3-population)
+                 ;;(map mcmc-state->score new3-population))
                 ;;(display "\n")
                 ;;loop if there are any temps left.
-                ;;      (if (or collapse? (null? (rest temps)))
+                ;; (if (or collapse? (null? (rest temps)))
                 (if (null? (rest temps))
                     new3-population
                     (smc (rest temps) new3-population weights)))))))))

@@ -195,12 +195,12 @@
 
      ;;creates a with-proposer-call and places it into the store everytime the proc is called, this with-proposer-call can be used to make proposals in basic-proposal-distribution, assumes proc is a church thunk for now
      (define (church-with-proposer address store proc proposer)
-       (lambda (address store)
+       (lambda (call-address store)
          (let* ([with-proposer-calls (store->with-proposer-calls store)]
-                [value (proc address store)]
-                [new-call (make-with-proposer-call address value proposer)]
-                ;;[db (pretty-print (list "proposer-calls before " with-proposer-calls))]
-                [new-proposer-calls (add/replace-into-addbox with-proposer-calls address new-call)]
+                [value (proc call-address store)]
+                [new-call (make-with-proposer-call call-address value proposer)]
+                [db (pretty-print (list "with-proposer-called " call-address))]
+                [new-proposer-calls (add/replace-into-addbox with-proposer-calls call-address new-call)]
                 ;;[db (pretty-print (list "proposer-calls after " new-proposer-calls))]
                 [new-store (make-store (store->xrp-draws store)
                                        (store->xrp-stats store)
@@ -347,6 +347,14 @@
               '(list (make-mcmc-state store 'init-val address) store)
               '(make-mcmc-state (cons (first store) (cdr store)) 'init-val address)))
 
+
+       (define (church-make-addressed-initial-mcmc-state address store start-address)
+                                        ;(for-each display (list "capturing store, xrp-draws has length :" (length (store->xrp-draws store))
+                                        ;                        " xrp-stats: " (length (store->xrp-stats store)) "\n"))
+         ,(if *storethreading*
+              '(list (make-mcmc-state store 'init-val start-address) store)
+              '(make-mcmc-state (cons (first store) (cdr store)) 'init-val start-address)))
+       
        ;;this is like church-make-initial-mcmc-state, obut flags the created state to init new xrp-draws at left-most element of support.
        ;;clears the xrp-draws since it is meant to happen when we begin enumeration (so none of the xrp-draws in store can be relevant).
        (define (church-make-initial-enumeration-state address store)
@@ -360,7 +368,7 @@
        ;;must exit with store being the original store, which allows it to act as a 'counterfactual'. this is taken care of by wrapping as primitive (ie. non church- name).
        (define (counterfactual-update state nfqp . interventions)
          (let* ((new-tick (+ 1 (store->tick (mcmc-state->store state))))
-                ;;(db (pretty-print (list "interventions size" (length interventions) interventions)))
+                (db (if (> (length interventions) 1) (pretty-print (list "interventions size" (length interventions) "uncompressed-state xrp-draw number" (length (store->xrp-draws (mcmc-state->store state)))))))
                 (interv-store (make-store (fold (lambda (interv xrps)
                                                   (let (;;[db (pretty-print (list "going through interventions" xrps))])
                                                         )
@@ -381,6 +389,7 @@
                                           new-tick ;;increment the generation counter.
                                           (store->enumeration-flag (mcmc-state->store state))
                                           (store->with-proposer-calls (mcmc-state->store state))))
+                (db (if (> (length interventions) 1) (pretty-print  (list "interv-store" (length (store->xrp-draws interv-store)))) '()))
                ;; (db (pretty-print (list "interv-store"  interv-store)))
                 ;;application of the nfqp happens with interv-store, which is a fresh pair, so won't mutate original state.
                 ;;after application the store must be captured and put into the mcmc-state.
@@ -411,7 +420,7 @@
        ;;FIXME: assumes new choices drawn from the conditional prior -- that's currently true but not general.
        (define (clean-store store)
          (let* ((state-tick (store->tick store))
-;;                (db (pretty-print "in clean-store"))
+                ;;(db (pretty-print (list "in clean-store" (length (store->xrp-draws store)))))
                 (draws-bw/fw
                  (let loop ((draws (addbox->alist (store->xrp-draws store)))
                             (used-draws '())
