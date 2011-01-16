@@ -366,22 +366,25 @@
        ;;  takes: an mcmc state, a normal-from-proc, and an optional list of interventions (which is is a list of xrp-draw new-value pairs to assert).
        ;;  returns: a new mcmc state and the bw/fw score of any creations and deletions.
        ;;must exit with store being the original store, which allows it to act as a 'counterfactual'. this is taken care of by wrapping as primitive (ie. non church- name).
+       (define (add-interventions interv xrps)
+         (let* ([new-addbox (pull-outof-addbox xrps (xrp-draw-address (first interv)))]
+                [new-addbox (if (eq? (first new-addbox) #f) xrps (cdr new-addbox))]) ;;if intervention wasn't in addbox use original addbox
+                ;;[db (pretty-print (list "going through interventions in cf-update" (cdr (pull-outof-addbox xrps (xrp-draw-address (first interv)))) (xrp-draw-address (first interv)) (equal? (cdr (pull-outof-addbox xrps (xrp-draw-address (first interv)))) (xrp-draw-address (first interv)))))])
+           (add-into-addbox new-addbox
+                            (xrp-draw-address (first interv))
+                            (make-xrp-draw (xrp-draw-address (first interv))
+                                           (cdr interv)
+                                           (xrp-draw-name (first interv))
+                                           (xrp-draw-proposer (first interv))
+                                           (xrp-draw-ticks (first interv))
+                                           'dummy-score ;;dummy score which will be replace on update.
+                                           (xrp-draw-support (first interv))
+                                           ))))
+       
        (define (counterfactual-update state nfqp . interventions)
          (let* ((new-tick (+ 1 (store->tick (mcmc-state->store state))))
                 (db (if (> (length interventions) 1) (pretty-print (list "interventions size" (length interventions) "uncompressed-state xrp-draw number" (length (store->xrp-draws (mcmc-state->store state)))))))
-                (interv-store (make-store (fold (lambda (interv xrps)
-                                                  (let (;;[db (pretty-print (list "going through interventions" xrps))])
-                                                        )
-                                                  (add-into-addbox (cdr (pull-outof-addbox xrps (xrp-draw-address (first interv))))
-                                                                   (xrp-draw-address (first interv))
-                                                                   (make-xrp-draw (xrp-draw-address (first interv))
-                                                                                  (cdr interv)
-                                                                                  (xrp-draw-name (first interv))
-                                                                                  (xrp-draw-proposer (first interv))
-                                                                                  (xrp-draw-ticks (first interv))
-                                                                                  'dummy-score ;;dummy score which will be replace on update.
-                                                                                  (xrp-draw-support (first interv))
-                                                                                  ))))
+                (interv-store (make-store (fold add-interventions
                                                 (store->xrp-draws (mcmc-state->store state))
                                                 interventions)
                                           (store->xrp-stats (mcmc-state->store state)) ;;NOTE: incremental differs here (adjust score for new values).
