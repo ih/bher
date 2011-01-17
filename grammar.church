@@ -163,6 +163,7 @@
   (lambda (state address value)
     (let* (;;;(de)compress the program
            [program (mcmc-state->query-value state)]
+           [db (pretty-print (list "old program" program))]
            [ret1 (abstraction-move program)]
            [new-program (first ret1)]
            [lazy-new-program (list->lazy-list new-program)]
@@ -229,24 +230,24 @@
 ;;  program
 ;;  (equal? (eval program) #t))
 
-(mh-query
- 10 20
- (define lazy-program ((with-proposer gen-program (make-abstraction-proposer gen-program))))
-
- (define program (lazy-list->all-list lazy-program))
- program
- (equal? (eval program) #t))
-
-
-;; (mh-expr-query
+;; (mh-query
 ;;  10 20
 ;;  (define lazy-program ((with-proposer gen-program (make-abstraction-proposer gen-program))))
 
 ;;  (define program (lazy-list->all-list lazy-program))
 ;;  program
-;;  (equal? (eval program) #t)
-;;  '(let () t)
-;;  )
+;;  (equal? (eval program) #t))
+
+
+(mh-expr-query
+ 10 20
+ (define lazy-program ((with-proposer gen-program (make-abstraction-proposer gen-program))))
+
+ (define program (lazy-list->all-list lazy-program))
+ program
+ (equal? (eval program) #t)
+ (trivial-expr)
+ )
 
 
 

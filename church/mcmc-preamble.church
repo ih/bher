@@ -90,11 +90,17 @@
           proposal-state)))
 
 (define (expr-initializer normal-form-proc expr)
-  (let* ([random-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc))]
-         [fixed-val-state (make-mcmc-state (mcmc-state->store random-state) expr (mcmc-state->address random-state))]
+  (let* ([db (pretty-print (list "entering expr-initializer" expr))]
+         [random-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc))]
+         [db (pretty-print (list "random state created" (mcmc-state->query-value random-state)))]
+         [fixed-val-state (make-mcmc-state (mcmc-state->store random-state) (pair #t (lambda () expr)) (mcmc-state->address random-state))]
          [with-proposer-calls (mcmc-state->with-proposer-calls fixed-val-state)] ;;should be non-empty due to call to cf-update
-         [interventions (run-xrp-proposer with-proposer-calls fixed-val-state)]
-         [init-state (first (apply counterfactual-update (append (list fixed-val-state normal-form-proc) interventions)))])
+         [db (pretty-print (list "with-proposer-calls created" (length with-proposer-calls)))]
+         [interventions (third (run-with-proposer with-proposer-calls fixed-val-state))]
+         [db (pretty-print (list "interventions created" (length interventions)))]
+         [init-state (first (apply counterfactual-update (append (list fixed-val-state normal-form-proc) interventions)))]
+         [db (pretty-print "initial state created")]
+         )
     init-state))
 
   ;; (let ((proposal-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc))))
@@ -218,9 +224,10 @@
                             samples))
 
 (define (mh-expr-query samples lag normal-form-proc expr)
+  (let ([db (pretty-print (list "in mh-expr-query" samples lag expr))])
   (repeated-mcmc-query-core (lambda () (expr-initializer normal-form-proc expr))
                             (basic-repeat-kernel lag normal-form-proc)
-                            samples))
+                            samples)))
 
 (define (mh-query/annealed-init temps samples lag rej-steps temps->nfqp)
   (let ([normal-form-proc (apply temps->nfqp (first temps))])

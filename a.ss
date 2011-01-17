@@ -1,4 +1,6 @@
 (define (f a b . z)
   z)
 
-,(if #t '(list 1 2 3) '(list a b c))
+(define (f x)
+  (let*-values ([(x y z) (apply values '(a b c))])
+    (list x y z)))

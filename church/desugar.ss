@@ -200,12 +200,6 @@
        `(,query-name ,@control-args (lambda () (begin ,@defs (pair ,cond-exp (lambda () ,query-exp)))) )))
    (register-sugar! query? desugar-query 1))
 
-   ;; (define (desugar-expr-query expr)
-   ;;   (let*-values ([ (control-part defs) (break (lambda (subexpr) (tagged-list? subexpr 'define)) (drop-right expr 2))]
-   ;;                 [ (control-args) (rest control-part)]
-   ;;                 [ (query-exp cond-exp expr) (apply values (take-right expr 3))])
-   ;;     `(,query-name ,@control-args (lambda () (begin ,@defs (pair ,cond-exp (lambda () ,query-exp)))) ,expr)))
-   ;; (register-sugar! query? desugar-query 1))
 
  
  ;;psmc-query needs to be handled slightly differently, because the query code gets temps->nfqp which takes 'temperature' arguments then gives the nfqp.
@@ -231,8 +225,19 @@
  (define (desugar-mh-query/annealed-init expr)
    (desugar-tempered-query 'mh-query/annealed-init expr))
 
+ (define (mh-expr-query? expr)
+   (and (tagged-list? expr 'mh-expr-query)
+        (>= (length (rest expr)) 2)))
+
+ (define (desugar-mh-expr-query expr)
+   (let*-values ([ db (pretty-print (list "desugaring" (take-right expr 3)))]
+                 [ (control-part defs) (break (lambda (subexpr) (tagged-list? subexpr 'define)) (drop-right expr 3))]
+                 [ (control-args) (rest control-part)]
+                 [ (query-exp cond-exp init-expr) (apply values (take-right expr 3))])
+     `(mh-expr-query ,@control-args (lambda () (begin ,@defs (pair ,cond-exp (lambda () ,query-exp)))) ,init-expr)))
 
  
+
 
  ;;lazify adds delay to an expression. make sure that the expression is fully-desugarred first!
  (define (lazify? expr) (tagged-list? expr 'lazify))
@@ -318,5 +323,7 @@
  ;; (register-query-sugar 'mh-expr-query)
  (register-sugar! psmc-query? desugar-psmc-query 1)
  (register-sugar! mh-query/annealed-init? desugar-mh-query/annealed-init 1)
+ (register-sugar! mh-expr-query? desugar-mh-expr-query 1)
+ 
 
  )
