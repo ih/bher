@@ -200,6 +200,14 @@
        `(,query-name ,@control-args (lambda () (begin ,@defs (pair ,cond-exp (lambda () ,query-exp)))) )))
    (register-sugar! query? desugar-query 1))
 
+   ;; (define (desugar-expr-query expr)
+   ;;   (let*-values ([ (control-part defs) (break (lambda (subexpr) (tagged-list? subexpr 'define)) (drop-right expr 2))]
+   ;;                 [ (control-args) (rest control-part)]
+   ;;                 [ (query-exp cond-exp expr) (apply values (take-right expr 3))])
+   ;;     `(,query-name ,@control-args (lambda () (begin ,@defs (pair ,cond-exp (lambda () ,query-exp)))) ,expr)))
+   ;; (register-sugar! query? desugar-query 1))
+
+ 
  ;;psmc-query needs to be handled slightly differently, because the query code gets temps->nfqp which takes 'temperature' arguments then gives the nfqp.
  ;;assumes call form (psmc-query <temp-args> <temps> ..other-control-args.. ..defines.. <query-exp> <cond-exp>).
  (define (tempered-query? query-name expr)
@@ -222,6 +230,8 @@
    (tempered-query? 'mh-query/annealed-init expr))
  (define (desugar-mh-query/annealed-init expr)
    (desugar-tempered-query 'mh-query/annealed-init expr))
+
+
  
 
  ;;lazify adds delay to an expression. make sure that the expression is fully-desugarred first!
@@ -299,11 +309,13 @@
 
   ;;syntacic sugar query forms:
  (register-query-sugar 'mh-query)
+
  (register-query-sugar 'rejection-query)
  (register-query-sugar 'enumeration-query)
  ;(register-query-sugar 'primitive-laplace-mh-query 'laplace-mh-query)
  ;(register-query-sugar 'primitive-gradient-query 'gradient-query)
 
+ ;; (register-query-sugar 'mh-expr-query)
  (register-sugar! psmc-query? desugar-psmc-query 1)
  (register-sugar! mh-query/annealed-init? desugar-mh-query/annealed-init 1)
 

@@ -199,7 +199,7 @@
          (let* ([with-proposer-calls (store->with-proposer-calls store)]
                 [value (proc call-address store)]
                 [new-call (make-with-proposer-call call-address value proposer)]
-                [db (pretty-print (list "with-proposer-called " call-address))]
+                ;;[db (pretty-print (list "with-proposer-called " call-address))]
                 [new-proposer-calls (add/replace-into-addbox with-proposer-calls call-address new-call)]
                 ;;[db (pretty-print (list "proposer-calls after " new-proposer-calls))]
                 [new-store (make-store (store->xrp-draws store)
@@ -383,7 +383,7 @@
        
        (define (counterfactual-update state nfqp . interventions)
          (let* ((new-tick (+ 1 (store->tick (mcmc-state->store state))))
-                (db (if (> (length interventions) 1) (pretty-print (list "interventions size" (length interventions) "uncompressed-state xrp-draw number" (length (store->xrp-draws (mcmc-state->store state)))))))
+                ;;(db (if (> (length interventions) 1) (pretty-print (list "interventions size" (length interventions) "uncompressed-state xrp-draw number" (length (store->xrp-draws (mcmc-state->store state)))))))
                 (interv-store (make-store (fold add-interventions
                                                 (store->xrp-draws (mcmc-state->store state))
                                                 interventions)
@@ -392,15 +392,16 @@
                                           new-tick ;;increment the generation counter.
                                           (store->enumeration-flag (mcmc-state->store state))
                                           (store->with-proposer-calls (mcmc-state->store state))))
-                (db (if (> (length interventions) 1) (pretty-print  (list "interv-store" (length (store->xrp-draws interv-store)))) '()))
+                ;;(db (if (> (length interventions) 1) (pretty-print  (list "interv-store" (length (store->xrp-draws interv-store)))) '()))
                ;; (db (pretty-print (list "interv-store"  interv-store)))
                 ;;application of the nfqp happens with interv-store, which is a fresh pair, so won't mutate original state.
                 ;;after application the store must be captured and put into the mcmc-state.
+                ;;[db (pretty-print "running the nfqp")]
                 (ret ,(if *storethreading*
                           '(church-apply (mcmc-state->address state) interv-store nfqp '()) ;;return is already list of value + store.
                           '(list (church-apply (mcmc-state->address state) interv-store nfqp '()) interv-store) ;;capture store, which may have been mutated.
                           ))
-
+                ;;[db (pretty-print "nfqp complete")]
                 ;;(db (pretty-print (list "interv-store after update" (store->tick (mcmc-state->store state)) interv-store)))
 ;;                (db (repl ret))
 

@@ -1,6 +1,6 @@
 ;;;GRAMMAR
-(define MAX-FUNCS 1)
-(define MAX-ARITY 1)
+(define MAX-FUNCS 4)
+(define MAX-ARITY 4)
 
 (define (gen-program)
   (let* ([num-of-funcs (sample-integer MAX-FUNCS)]
@@ -173,17 +173,17 @@
            [temps-nfqp (make-temps-nfqp lazy-new-program grammar)]
            [depths (map list (iota (compute-depth lazy-new-program)))]
            ;;[db (pretty-print (list "entering the core" address))]
-           [db (pretty-print (list "entering the core uncompressed-state xrps" address (map xrp-draw-ticks (map rest (mcmc-state->xrp-draws state)))))]
+           ;;[db (pretty-print (list "entering the core uncompressed-state xrps" address (map xrp-draw-ticks (map rest (mcmc-state->xrp-draws state)))))]
 ;;           [states (smc-core depths 1 10 temps-nfqp address)]
-           [states (smc-core depths 1 10 temps-nfqp '())]
+           [states (smc-core depths 1 2 temps-nfqp '())]
          ;;;get the xrps and return them as interventions
            ;;[db (pretty-print (list "exiting the core" address))]
-           [db (pretty-print (list "exiting the core uncompressed-state xrps" (map xrp-draw-ticks (map rest (mcmc-state->xrp-draws state)))))]
+           ;;[db (pretty-print (list "exiting the core uncompressed-state xrps" (map xrp-draw-ticks (map rest (mcmc-state->xrp-draws state)))))]
            [xrp-draws (map rest (mcmc-state->xrp-draws (first states)))] ;;;choosing the first state is arbitrary, should all be same
 
-           [interventions (map (make-interventions address (get-xrp-ticks state)) xrp-draws)]
+           [interventions (map (make-interventions address (get-xrp-ticks state)) xrp-draws)])
 ;;           [interventions (map (lambda (xrp-draw) (pair xrp-draw (xrp-draw-value xrp-draw))) xrp-draws)]
-           [db (pretty-print (list "interventions" interventions))])
+           ;;[db (pretty-print (list "interventions" interventions))])
       (list abstraction-fw-prob abstraction-bw-prob interventions))))
 
 ;;;remove extra address made by call to nfqp thunk then return a p modified draw with the value as an intervention
@@ -236,6 +236,18 @@
  (define program (lazy-list->all-list lazy-program))
  program
  (equal? (eval program) #t))
+
+
+;; (mh-expr-query
+;;  10 20
+;;  (define lazy-program ((with-proposer gen-program (make-abstraction-proposer gen-program))))
+
+;;  (define program (lazy-list->all-list lazy-program))
+;;  program
+;;  (equal? (eval program) #t)
+;;  '(let () t)
+;;  )
+
 
 
 ;; (mh-query

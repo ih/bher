@@ -36,7 +36,7 @@
 (define (addbox-draw-item addbox) (rest (uniform-draw (addbox->alist addbox))))
 
 (define (run-with-proposer with-proposer-calls state)
-  (let* ([db (pretty-print "with-proposer")]
+  (let* (;;[db (pretty-print "with-proposer")]
          [chosen (addbox-draw-item with-proposer-calls)])
     ((with-proposer-call-proposer chosen) state (with-proposer-call-address chosen) (with-proposer-call-value chosen))))
 
@@ -51,18 +51,22 @@
     (list proposal-fw-score proposal-bw-score (list (pair chosen proposed-val)))))
 
 (define (basic-proposal-distribution state normal-form-proc)
-  (let* ([xrp-draws (mcmc-state->xrp-draws state)]
+  (let* (;;[db (pretty-print "entering basic-proposal-distribution")]
+         [xrp-draws (mcmc-state->xrp-draws state)]
          [with-proposer-calls (mcmc-state->with-proposer-calls state)])
     (if (and (none? xrp-draws) (none? with-proposer-calls) trivial-proposal)
         (trivial-proposal state)
         (let* (;;[db (pretty-print (list "before compression xrp-draw number" (length (store->xrp-draws (mcmc-state->store state))) (mcmc-state->query-value state) (mcmc-state->xrp-draws state)))]
                [scores+interventions (propose-interventions xrp-draws with-proposer-calls state)]
+               ;;[db (pretty-print "interventions made")]
                [proposal-fw-score (first scores+interventions)]
                [proposal-bw-score (second scores+interventions)]
                [interventions (third scores+interventions)]
                ;;"interventions about to do basic cfupdate" (length interventions) (map first interventions)
                ;;[db (if (> (length interventions) 1) (pretty-print (list  "uncompressed-state xrp-draw number"  (mcmc-state->query-value state) (mcmc-state->xrp-draws state))) '())]
+               ;;[db (pretty-print (list "about to cf in bpd" (length interventions)))]
                [ret2 (apply counterfactual-update (append (list state normal-form-proc) interventions))]
+               ;;[db (pretty-print "cf in bpd complete")]
                [proposal-state (first ret2)]
                [cd-bw/fw (second ret2)]
                [ind-fw (- (log (addbox-size (mcmc-state->xrp-draws state))))]
@@ -84,6 +88,15 @@
       (if (= -inf.0 (mcmc-state->score proposal-state))
           (rejection-addressed-initializer normal-form-proc start-address)
           proposal-state)))
+
+(define (expr-initializer normal-form-proc expr)
+  (let* ([random-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc))]
+         [fixed-val-state (make-mcmc-state (mcmc-state->store random-state) expr (mcmc-state->address random-state))]
+         [with-proposer-calls (mcmc-state->with-proposer-calls fixed-val-state)] ;;should be non-empty due to call to cf-update
+         [interventions (run-xrp-proposer with-proposer-calls fixed-val-state)]
+         [init-state (first (apply counterfactual-update (append (list fixed-val-state normal-form-proc) interventions)))])
+    init-state))
+
   ;; (let ((proposal-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc))))
   ;;       ;;(proposal-state (first (counterfactual-update (make-addressed-initial-mcmc-state start-address) normal-form-proc)))) ;;don't care about bw/fw for init.
   ;;   (if (= -inf.0 (mcmc-state->score proposal-state))
@@ -182,7 +195,7 @@
 ;;;queries
 (define (repeated-mcmc-query-core initializer kernel num-samples)
   (let* ([init-state (initializer)]
-        [db (pretty-print (list "init state" (mcmc-state->xrp-draws init-state) (mcmc-state->query-value init-state)))])
+        [db (pretty-print (list "init state" (mcmc-state->query-value init-state)))])
     (when inference-timing
           (display "initialized: ")
           (display (current-date))
@@ -204,10 +217,10 @@
                             (basic-repeat-kernel lag normal-form-proc)
                             samples))
 
-;; (define (mh-fixed-start samples lag normal-form-proc)
-;;   (repeated-mcmc-query-core (lambda () (test-initializer normal-form-proc))
-;;                             (basic-repeat-kernel lag normal-form-proc)
-;;                             samples))
+(define (mh-expr-query samples lag normal-form-proc expr)
+  (repeated-mcmc-query-core (lambda () (expr-initializer normal-form-proc expr))
+                            (basic-repeat-kernel lag normal-form-proc)
+                            samples))
 
 (define (mh-query/annealed-init temps samples lag rej-steps temps->nfqp)
   (let ([normal-form-proc (apply temps->nfqp (first temps))])
@@ -266,9 +279,12 @@
                                         (multinomial new-population resample-distribution))))]
                    [weights (make-list popsize 0)]
                    ;;rejuvenate using kernel.
+                   ;;[db (pretty-print "rejuvenating kernel")]
                    [kernel (repeat-kernel lag (make-mh-kernel (lambda (state) (basic-proposal-distribution state (apply temps->nfqp (first temps))))
                                                               mcmc-state->score))]
-                   [new3-population (map kernel new2-population)])
+                   [new3-population (map kernel new2-population)]
+                   ;;[db (pretty-print (list "rejuvenation complete" temps))]
+                   )
               (begin ;;(map (lambda (x y) (begin (display " ")(display x)(display " ")(display y)(display "\n")))
                  ;;(map mcmc-state->query-value new3-population)
                  ;;(map mcmc-state->score new3-population))
