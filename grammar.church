@@ -36,7 +36,7 @@
 (define (gen-vars arity)
   (if (= 0 arity)
       '()
-      (lazy-pair (sym 'V) (gen-vars (- arity 1)))))
+      (lazy-pair (sym 'v) (gen-vars (- arity 1)))))
 ;;  (lazy-repeat arity (lambda () (sym 'V))))
 
 
@@ -165,7 +165,7 @@
            [program (mcmc-state->query-value state)]
            [db (pretty-print (list "old program" program))]
            [ret1 (abstraction-move program)]
-           [new-program (first ret1)]
+           [new-program (normalize-names (first ret1))]
            [lazy-new-program (list->lazy-list new-program)]
            [db (pretty-print (list "new program" new-program))]
            [abstraction-fw-prob (second ret1)]
@@ -186,6 +186,8 @@
 ;;           [interventions (map (lambda (xrp-draw) (pair xrp-draw (xrp-draw-value xrp-draw))) xrp-draws)]
            ;;[db (pretty-print (list "interventions" interventions))])
       (list abstraction-fw-prob abstraction-bw-prob interventions))))
+
+;;makes sure all function and variable names start at 1 and increase incrementally
 
 ;;;remove extra address made by call to nfqp thunk then return a p modified draw with the value as an intervention
 (define (make-interventions init-address state-xrp-ticks)
@@ -246,7 +248,7 @@
  (define program (lazy-list->all-list lazy-program))
  program
  (equal? (eval program) #t)
- (trivial-expr)
+ (test-expr)
  )
 
 

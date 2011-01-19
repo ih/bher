@@ -1,4 +1,32 @@
-(eval '(+ 2 2))
+;;;compression tests
+;;(define test-expr '(let () (if (if #t #t #t) (if #t #t #t) (if #t #t #t))))
+;;(define program-form (sexpr->program test-expr))
+ ;; (pretty-print (compressions program-form))
+ ;; (pretty-print (compressions program-form))
+ ;; (pretty-print (compressions program-form))
+
+;;(pretty-print (repeat 20 (lambda () (first (abstraction-move test-expr)))))
+
+(define (preorder expr)
+  (if (or (symbol? expr) (null? expr) (boolean? expr))
+      expr
+      (begin (pretty-print (list "hello" (first expr)))
+             (map preorder (rest expr)))))
+
+(define (postorder expr)
+  (if (not (list? expr))
+      expr
+      (begin (map preorder (rest expr))
+             (pretty-print (first expr)))))
+
+(pretty-print (test-expr))
+
+(normalize-names (test-expr))
+(var? (first (test-expr)))
+;;(rest (test-expr))
+;;(map pretty-print '(1 2 3 4))
+;;(+ 2 2)
+;;(eval '(+ 2 2))
 ;;(+ 2 2)
 ;; (mh-query
 ;;  10 10

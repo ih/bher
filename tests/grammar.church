@@ -105,14 +105,15 @@
 
 ;;;TESTS
 ;;;grammar test
+(pretty-print (map lazy-list->all-list (repeat 10 gen-program)))
 ;;;evaluation check
 ;;(define testp (lazy-list->all-list (gen-program)))
 ;;(pretty-print (list testp (eval testp)))
 
 ;;;scorer tests
-(define scorer (make-scorer gen-program))
+;;(define scorer (make-scorer gen-program))
 ;;;expression with functions that have variables (not used in body)
-(pretty-print (exp (scorer '() '(lambda () (define F1 (lambda (V1 V2) t)) (define F2 (lambda (V3) t)) (if t f t)))))
+;;(pretty-print (exp (scorer '() '(lambda () (define F1 (lambda (V1 V2) t)) (define F2 (lambda (V3) t)) (if t f t)))))
 ;;;expression with functions used in body
 ;;(pretty-print (exp (scorer '() '(lambda () (define F1 (lambda (V1 V2) t)) (define F2 (lambda (V3) t)) (if (F1 t f) f t)))))
 ;;;expression with functions used in body and variables

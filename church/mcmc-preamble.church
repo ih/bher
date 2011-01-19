@@ -6,22 +6,6 @@
 
 ;;NOTE: since these are church procedures, the xrp-list will accumulate draws due to accept/reject decisions and proposals. will this cause bad slowdown?
 
-;;;kernels (mcmc transition distributions) and proposal distributions
-
-;;  (define (abstraction-proposal-distribution state normal-form-proc)
-;;  (let ([program (mcmc-state->query-value state)]
-;;        [ret1 (abstraction-proposer program)]
-;;        [new-program (first ret1)]
-;;        [fw-prob (second ret1)]
-;;        [bw-prob (third ret1)]
-;;        [grammar (get-grammar state)]
-;;        [grammar->random-choices (psmc-query grammar
-                
-;;        [ret2 (counterfactual-update state normal-form-proc
-;; grammar->program-random-choices)]
-;;        [proposal-state (first ret2)]
-;;        [cd-bw/fw (second ret2)])
-;;    (list (acceptance-prob cd-bw/fw fw-prob bw-prob) proposal-state)))
 
 ;;should return a list of interventions so run-with-proposer and run-xrp-proposer should return lists of interventio
 (define (propose-interventions xrp-draws with-proposer-calls state)
