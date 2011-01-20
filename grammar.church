@@ -26,7 +26,7 @@
 ;;      (lazy-repeat num-of-funcs gen-func-signature))
 
 (define (gen-func-signature)
-  (let* ([name (sym 'F)]
+  (let* ([name (sym (func-symbol))]
          ;;[name 'F]
          [arity (sample-integer MAX-ARITY)]
          [vars (gen-vars arity)])
@@ -36,7 +36,7 @@
 (define (gen-vars arity)
   (if (= 0 arity)
       '()
-      (lazy-pair (sym 'v) (gen-vars (- arity 1)))))
+      (lazy-pair (sym (var-symbol)) (gen-vars (- arity 1)))))
 ;;  (lazy-repeat arity (lambda () (sym 'V))))
 
 
