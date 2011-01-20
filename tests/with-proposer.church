@@ -1,31 +1,55 @@
-(mh-query
- 10 10
- (define (xor a b) (not (eq? a b)))
- (define a (flip))
- (define b (flip))
- (define foo (lambda () (xor a b)))
- (list a b)
- (foo))
+;; (mh-query
+;;  10 10
+;;  (define (xor a b) (not (eq? a b)))
+;;  (define a (flip))
+;;  (define b (flip))
+;;  (define foo (lambda () (xor a b)))
+;;  (list a b)
+;;  (foo))
 
-(define (xor-proposer state address value)
-  (let* ([xrp-draws (map rest (mcmc-state->xrp-draws state))]
-         [interventions (map flip-intervention xrp-draws)]
-         [db (pretty-print "xor-proposer")])
-    (list 0.0 0.0 interventions)))
+;; (define (xor-proposer state address value)
+;;   (let* ([xrp-draws (map rest (mcmc-state->xrp-draws state))]
+;;          [interventions (map flip-intervention xrp-draws)]
+;;          [db (pretty-print "xor-proposer")])
+;;     (list 0.0 0.0 interventions)))
 
-(define (flip-intervention xrp-draw)
-  (let* (;[db (pretty-print (list "flipping..." xrp-draw))]
-         [intervention (pair xrp-draw (not (xrp-draw-value xrp-draw)))])
-         ;;[db (pretty-print intervention)])
-    intervention))
-;;  (pair xrp-draw (not (xrp-draw-value xrp-draw))))
+;; (define (flip-intervention xrp-draw)
+;;   (let* (;[db (pretty-print (list "flipping..." xrp-draw))]
+;;          [intervention (pair xrp-draw (not (xrp-draw-value xrp-draw)))])
+;;          ;;[db (pretty-print intervention)])
+;;     intervention))
+;; ;;  (pair xrp-draw (not (xrp-draw-value xrp-draw))))
 
-(mh-query
- 10 10
- (define (xor a b) (not (eq? a b)))
- (define a (flip))
- (define b (flip))
+;; (mh-query
+;;  10 10
+;;  (define (xor a b) (not (eq? a b)))
+;;  (define a (flip))
+;;  (define b (flip))
           
- (define foo (with-proposer (lambda () (xor a b)) xor-proposer))
- (list a b)
- (foo))
+;;  (define foo (with-proposer (lambda () (xor a b)) xor-proposer))
+;;  (list a b)
+;;  (foo))
+
+(mh-query
+ 10 10
+ (define (xor a b) (not (eq? a b)))
+ (define vals (lambda () (list (flip) (flip))))
+ (define two-flips (vals))
+ two-flips
+ (apply xor two-flips))
+
+
+;; (define (switch-proposer value)
+;;   (let ([first-value (first value)]
+;;         [second-value (second value)])
+;;     (list second first)))
+
+;; (mh-query
+;;  10 10
+;;  (define (xor a b) (not (eq? a b)))
+;;  (define vals (with-proposer (lambda () (list (flip) (flip))) swith-proposer))
+;;  (define two-flips (vals))
+;;  two-flips
+;;  (apply xor two-flips))
+
+

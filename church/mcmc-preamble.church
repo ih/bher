@@ -20,16 +20,16 @@
 (define (addbox-draw-item addbox) (rest (uniform-draw (addbox->alist addbox))))
 
 (define (run-with-proposer with-proposer-calls state)
-  (let* (;;[db (pretty-print "with-proposer")]
+  (let* ([db (pretty-print "with-proposer")]
          [chosen (addbox-draw-item with-proposer-calls)])
     ((with-proposer-call-proposer chosen) state (with-proposer-call-address chosen) (with-proposer-call-value chosen))))
 
 (define (run-xrp-proposer xrp-draws state)
-  (let* (;;[db (pretty-print "xrp-proposer")]
+  (let* ([db (pretty-print "xrp-proposer")]
          [chosen (addbox-draw-item xrp-draws)]
          [ret1 ((xrp-draw-proposer chosen) state)]
          [proposed-val (first ret1)]
-;;         [db (pretty-print (list "proposed-value proposed-val" (xrp-draw-address chosen) proposed-val))]
+         ;;[db (pretty-print (list "proposed-value proposed-val" (xrp-draw-address chosen) proposed-val))]
          [proposal-fw-score (second ret1)]
          [proposal-bw-score (third ret1)])
     (list proposal-fw-score proposal-bw-score (list (pair chosen proposed-val)))))
@@ -149,7 +149,7 @@
            (old-p (scorer state))
            (new-p (scorer proposal-state))
            (accept (log-flip (min 0.0 (+ (- new-p old-p) bw/fw))))
-           ;;[db (pretty-print (list "accepted?" accept "same-state proposed:" (equal? (mcmc-state->query-value proposal-state) (mcmc-state->query-value state))))]
+           [db (pretty-print (list "accepted?" accept "same-state proposed:" (equal? (mcmc-state->query-value proposal-state) (mcmc-state->query-value state))))]
            ;(dummy (if accept (display "--accept--\n") (display "--reject--\n")))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
       (if accept
