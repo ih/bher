@@ -33,16 +33,16 @@
 (mh-query
  10 10
  (define (xor a b) (not (eq? a b)))
- (define vals (lambda () (list (flip) (flip))))
- (define two-flips (vals))
+ (define vals (lambda () (lazy-list (flip) (flip))))
+ (define two-flips (lazy-list->all-list (vals)))
  two-flips
  (apply xor two-flips))
 
 
-;; (define (switch-proposer value)
-;;   (let ([first-value (first value)]
-;;         [second-value (second value)])
-;;     (list second first)))
+(define (switch-proposer value)
+  (let ([first-value (first value)]
+        [second-value (second value)])
+    (list (list second first) 0.0 0.0)))
 
 ;; (mh-query
 ;;  10 10

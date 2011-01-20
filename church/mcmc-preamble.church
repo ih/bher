@@ -21,8 +21,40 @@
 
 (define (run-with-proposer with-proposer-calls state)
   (let* ([db (pretty-print "with-proposer")]
-         [chosen (addbox-draw-item with-proposer-calls)])
-    ((with-proposer-call-proposer chosen) state (with-proposer-call-address chosen) (with-proposer-call-value chosen))))
+         [chosen (addbox-draw-item with-proposer-calls)]
+         [address (with-proposer-call-address chosen)]
+         [new-value+scores ((with-proposer-call-proposer chosen) (lazy-list->all-list (with-proposer-call-value chosen)))]
+         [new-value (list->lazy-list (first new-value+scores))]
+         [fw-prob (second new-value+scores)]
+         [bw-prob (third new-value+scores)]
+         [temps-nfqp (make-temps-nfqp new-value (with-proposer-call-proposer chosen))]
+         [depths (map list (iota (compute-depth new-value)))]
+         [states (smc-core depths 1 2 temps-nfqp '())]
+         [xrp-draws (map rest (mcmc-state->xrp-draws (first states)))]
+         [interventions (map (make-interventions address (get-xrp-ticks state)) xrp-draws)])
+    (list fw-prob bw-prob interventions)))
+
+(define (get-xrp-ticks mcmc-state)
+  (let* ([draws-addbox (mcmc-state->xrp-draws mcmc-state)]
+         [xrp-draw (rest (first draws-addbox))])
+    (xrp-draw-ticks xrp-draw)))
+    
+(define (make-interventions init-address state-xrp-ticks)
+  (lambda (xrp-draw)
+    (let* ([address (xrp-draw-address xrp-draw)]
+           [new-address (adjust-address address init-address)]
+           [new-xrp-draw (make-xrp-draw new-address
+                                        (xrp-draw-value xrp-draw)
+                                        (xrp-draw-name xrp-draw)
+                                        (xrp-draw-proposer xrp-draw)
+                                        state-xrp-ticks
+                                        (xrp-draw-score xrp-draw)
+                                        (xrp-draw-support xrp-draw))])
+      (pair new-xrp-draw (xrp-draw-value xrp-draw)))))
+
+(define (adjust-address address init-address)
+  (append (drop-right address 1) init-address))
+
 
 (define (run-xrp-proposer xrp-draws state)
   (let* ([db (pretty-print "xrp-proposer")]
