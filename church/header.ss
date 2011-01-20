@@ -186,19 +186,20 @@
      ;; (define addbox-size trie-size)
      ;; (define addbox-empty? trie-empty?)
 
-     (define (make-with-proposer-call address value proposer-thunk)
-       (list address value proposer-thunk))
+     (define (make-with-proposer-call address value proposer-thunk proc)
+       (list address value proposer-thunk proc))
 
      (define with-proposer-call-address first)
      (define with-proposer-call-value second)
      (define with-proposer-call-proposer third)
+     (define with-proposer-call-proc fourth)
 
      ;;creates a with-proposer-call and places it into the store everytime the proc is called, this with-proposer-call can be used to make proposals in basic-proposal-distribution, assumes proc is a church thunk for now
      (define (church-with-proposer address store proc proposer)
        (lambda (call-address store)
          (let* ([with-proposer-calls (store->with-proposer-calls store)]
                 [value (proc call-address store)]
-                [new-call (make-with-proposer-call call-address value proposer)]
+                [new-call (make-with-proposer-call call-address value proposer proc)]
                 ;;[db (pretty-print (list "with-proposer-called " call-address))]
                 [new-proposer-calls (add/replace-into-addbox with-proposer-calls call-address new-call)]
                 ;;[db (pretty-print (list "proposer-calls after " new-proposer-calls))]
