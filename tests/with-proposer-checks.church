@@ -1,0 +1,44 @@
+(define samples 150)
+(define lag 20)
+(define runs 5)
+(define error-tolerance 0.07)
+
+(define (with-proposer-test distribution with-proposer-distribution expectation-fn true-expectation tolerance name)
+  (begin
+    (display "with-proposer NOT used....")
+    (check-test distribution expectation-fn true-expectation tolerance name)
+    (display "with-proposer used....")
+    (check-test with-proposer-distribution expectation-fn true-expectation tolerance name)))
+
+(define (check-test info expectation-fn true-expectation tolerance name)
+    (begin
+      (let* ([estimates (map (lambda (run) (mean (map expectation-fn run))) info)]
+             [errors (map (lambda (estimate) (abs (- estimate true-expectation))) estimates)]
+             [mean-abs-error (mean errors)])
+        (if (> mean-abs-error tolerance)
+            (for-each display (list ".. failed! true expectation: "  true-expectation ", test mean: " (mean estimates) "\n"))
+            (display ".. passed.\n")))))
+
+
+(with-proposer-test (repeat runs
+                    (lambda ()
+                      (repeat samples (lambda () (flip 0.7)))))
+                    (repeat runs
+                    (lambda ()
+                      (repeat samples (lambda () (flip 0.7)))))
+                    (lambda (x) (if x 1 0))
+                    0.7
+                    error-tolerance
+                    "random, no query" )
+
+;; (check-test (repeat runs
+;;                     (lambda ()
+;;                       (mh-query samples lag
+;;                                 (define a (/ 1 1000))
+;;                                 a
+;;                                 (flip a) )))
+;;             (lambda (b) b)
+;;             (/ 1 1000)
+;;             0.0 ;;error-tolerance
+;;             "setting a flip" )
+
