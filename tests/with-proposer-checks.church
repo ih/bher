@@ -5,6 +5,7 @@
 
 (define (with-proposer-test distribution with-proposer-distribution expectation-fn true-expectation tolerance name)
   (begin
+    (pretty-print name)
     (display "with-proposer NOT used....")
     (check-test distribution expectation-fn true-expectation tolerance name)
     (display "with-proposer used....")
@@ -20,25 +21,33 @@
             (display ".. passed.\n")))))
 
 
+(define (flip-proposer value) (not value 0.0 0.0)) 
+
 (with-proposer-test (repeat runs
-                    (lambda ()
-                      (repeat samples (lambda () (flip 0.7)))))
+                            (lambda ()
+                              (repeat samples (lambda () (flip 0.7)))))
                     (repeat runs
-                    (lambda ()
-                      (repeat samples (lambda () (flip 0.7)))))
+                            (lambda ()
+                              (repeat samples (with-proposer (lambda () (flip 0.7)) flip-proposer))))
                     (lambda (x) (if x 1 0))
                     0.7
                     error-tolerance
                     "random, no query" )
 
-;; (check-test (repeat runs
-;;                     (lambda ()
-;;                       (mh-query samples lag
-;;                                 (define a (/ 1 1000))
-;;                                 a
-;;                                 (flip a) )))
-;;             (lambda (b) b)
-;;             (/ 1 1000)
-;;             0.0 ;;error-tolerance
-;;             "setting a flip" )
+(with-proposer-test (repeat runs
+                            (lambda ()
+                              (mh-query samples lag
+                                        (define a (/ 1 1000))
+                                        a
+                                        (flip a) )))
+                    (repeat runs
+                            (lambda ()
+                              (mh-query samples lag
+                                        (define a (/ 1 1000))
+                                        a
+                                        (flip a) )))
+                    (lambda (b) b)
+                    (/ 1 1000)
+                    0.0 ;;error-tolerance
+                    "setting a flip" )
 

@@ -81,6 +81,7 @@
                [proposal-fw-score (first scores+interventions)]
                [proposal-bw-score (second scores+interventions)]
                [interventions (third scores+interventions)]
+               [none (reset-with-proposer-calls state)]
                ;;"interventions about to do basic cfupdate" (length interventions) (map first interventions)
                ;;[db (if (> (length interventions) 1) (pretty-print (list  "uncompressed-state xrp-draw number"  (mcmc-state->query-value state) (mcmc-state->xrp-draws state))) '())]
                ;;[db (pretty-print (list "about to cf in bpd" (length interventions)))]
@@ -220,7 +221,7 @@
 
 ;;;queries
 (define (repeated-mcmc-query-core initializer kernel num-samples)
-  (let* ([init-state (initializer)]
+  (let* ([init-state (reset-with-proposer-calls (initializer))]
         [db (pretty-print (list "init state" (mcmc-state->query-value init-state)))])
     (when inference-timing
           (display "initialized: ")

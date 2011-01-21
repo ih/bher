@@ -131,6 +131,18 @@
                                       (store->with-proposer-calls store))
                           'foo))
 
+     (define (reset-with-proposer-calls state)
+       (let* ([store (mcmc-state->store state)])
+         (make-mcmc-state (make-store (store->xrp-draws store)
+                                      (store->xrp-stats store)
+                                      (store->score store)
+                                      (store->tick store)
+                                      (store->enumeration-flag store)
+                                      (make-addbox))
+                          (mcmc-state->value state)
+                          (mcmc-state->address state))))
+
+
      
      (define (return-with-store store new-store value) ,(if *storethreading*
                                                             '(list value new-store)
@@ -325,6 +337,7 @@
          (append state (list proc)))
        
        (define mcmc-state->store first)
+       (define mcmc-state->value second)
        (define mcmc-state->address third)
        (define (mcmc-state->xrp-draws state) (store->xrp-draws (mcmc-state->store state)))
        (define (mcmc-state->with-proposer-calls state) (store->with-proposer-calls (mcmc-state->store state)))
