@@ -60,7 +60,7 @@
 
 
 (define (run-xrp-proposer xrp-draws state)
-  (let* ([db (pretty-print "xrp-proposer")]
+  (let* (;;[db (pretty-print "xrp-proposer")]
          [chosen (addbox-draw-item xrp-draws)]
          [ret1 ((xrp-draw-proposer chosen) state)]
          [proposed-val (first ret1)]
@@ -113,26 +113,27 @@
          [random-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc))]
          [db (pretty-print (list "random state created" (mcmc-state->query-value random-state)))]
          [fixed-val-state (make-mcmc-state (mcmc-state->store random-state) (pair #t (lambda () expr)) (mcmc-state->address random-state))]
-         [with-proposer-calls (mcmc-state->with-proposer-calls fixed-val-state)] ;;should be non-empty due to call to cf-update
-         [db (pretty-print (list "with-proposer-calls created" (length with-proposer-calls)))]
-         [interventions (third (run-with-proposer with-proposer-calls fixed-val-state))]
+         [with-proposer-calls (mcmc-state->with-proposer-calls fixed-val-state)] ;;should contain single call  due to exectution of cf-update
+         [modified-proposer-calls (initializer-proposer-calls with-proposer-calls expr)]
+         [db (pretty-print (list "with-proposer-calls created" (length with-proposer-calls) "modded proposer calls" modified-proposer-calls))]
+         [interventions (third (run-with-proposer modified-proposer-calls fixed-val-state))]
          [db (pretty-print (list "interventions created" (length interventions)))]
          [init-state (first (apply counterfactual-update (append (list fixed-val-state normal-form-proc) interventions)))]
          [db (pretty-print "initial state created")]
          )
     init-state))
+;;sets the value of the proposer call to expr
+(define (initializer-proposer-calls with-proposer-calls expr)
+  (let* ([first-entry (first (addbox->alist with-proposer-calls))]
+         [address (first first-entry)]
+         [call (rest first-entry)]
+         [new-call (make-with-proposer-call (with-proposer-call-address call)
+                                            (list->lazy-list expr) ;;only thing that changed
+                                            (with-proposer-call-proposer call)
+                                            (with-proposer-call-proc call))]
+         [new-proposer-calls (add-into-addbox (make-addbox) address new-call)])
+    new-proposer-calls))
 
-  ;; (let ((proposal-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc))))
-  ;;       ;;(proposal-state (first (counterfactual-update (make-addressed-initial-mcmc-state start-address) normal-form-proc)))) ;;don't care about bw/fw for init.
-  ;;   (if (= -inf.0 (mcmc-state->score proposal-state))
-  ;;       (rejection-addressed-initializer normal-form-proc start-address)
-  ;;       proposal-state)))
-
-;; (define (test-initializer normal-form-proc)
-;;   (let* ([te (lambda () (test-expr))]
-;;          [init-state (make-initial-mcmc-state)]
-;;          [test-state (list (first init-state) (pair 't te) (third init-state))])
-;;          test-state))
         
 
 (define verbose-init #f)
@@ -184,7 +185,7 @@
            (old-p (scorer state))
            (new-p (scorer proposal-state))
            (accept (log-flip (min 0.0 (+ (- new-p old-p) bw/fw))))
-           [db (pretty-print (list "accepted?" accept "same-state proposed:" (equal? (mcmc-state->query-value proposal-state) (mcmc-state->query-value state))))]
+           ;;[db (pretty-print (list "accepted?" accept "same-state proposed:" (equal? (mcmc-state->query-value proposal-state) (mcmc-state->query-value state))))]
            ;(dummy (if accept (display "--accept--\n") (display "--reject--\n")))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
       (if accept
