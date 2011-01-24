@@ -20,19 +20,23 @@
 (define (addbox-draw-item addbox) (rest (uniform-draw (addbox->alist addbox))))
 
 (define (run-with-proposer with-proposer-calls state)
-  (let* ([db (pretty-print "with-proposer")]
+  (let* (;;[db (pretty-print "with-proposer")]
          [chosen (addbox-draw-item with-proposer-calls)]
+         ;;[db (pretty-print (list "number of calls" (length with-proposer-calls)))]
          [address (with-proposer-call-address chosen)]
          [old-value (lazy-list->all-list (with-proposer-call-value chosen))]
-         [db (pretty-print (list "old value" old-value))]
+         ;;[db (pretty-print (list "old value" old-value))]
          [new-value+scores ((with-proposer-call-proposer chosen) old-value)]
-         [db (pretty-print (list "new value" (first new-value+scores)))]
+         [db (pretty-print new-value+scores)]
+         ;;[db (pretty-print (list "new value" (first new-value+scores)))]
          [new-value (list->lazy-list (first new-value+scores))]
          [fw-prob (second new-value+scores)]
          [bw-prob (third new-value+scores)]
          [temps-nfqp (make-temps-nfqp new-value (with-proposer-call-proc chosen))]
          [depths (map list (iota (compute-depth new-value)))]
+         ;;[db (pretty-print (list "the depths" depths))]
          [states (smc-core depths 1 2 temps-nfqp '())]
+         ;;[db (pretty-print (list "smc-core complete"))]
          [xrp-draws (map rest (mcmc-state->xrp-draws (first states)))]
          [interventions (map (make-interventions address (get-xrp-ticks state)) xrp-draws)])
     (list fw-prob bw-prob interventions)))
@@ -77,10 +81,12 @@
         (trivial-proposal state)
         (let* (;;[db (pretty-print (list "before compression xrp-draw number" (length (store->xrp-draws (mcmc-state->store state))) (mcmc-state->query-value state) (mcmc-state->xrp-draws state)))]
                [scores+interventions (propose-interventions xrp-draws with-proposer-calls state)]
-               ;;[db (pretty-print "interventions made")]
+
                [proposal-fw-score (first scores+interventions)]
                [proposal-bw-score (second scores+interventions)]
                [interventions (third scores+interventions)]
+               ;;[db (pretty-print (list "interventions made" interventions))]
+               ;;[db (pretty-print (list "xrps" (length (mcmc-state->xrp-draws state)) (mcmc-state->xrp-draws state)))]
                [none (reset-with-proposer-calls state)]
                ;;"interventions about to do basic cfupdate" (length interventions) (map first interventions)
                ;;[db (if (> (length interventions) 1) (pretty-print (list  "uncompressed-state xrp-draw number"  (mcmc-state->query-value state) (mcmc-state->xrp-draws state))) '())]
@@ -222,7 +228,7 @@
 ;;;queries
 (define (repeated-mcmc-query-core initializer kernel num-samples)
   (let* ([init-state (reset-with-proposer-calls (initializer))]
-        [db (pretty-print (list "init state" (mcmc-state->query-value init-state)))])
+        [db (pretty-print (list "init state" (mcmc-state->query-value init-state) (length (mcmc-state->with-proposer-calls init-state))))])
     (when inference-timing
           (display "initialized: ")
           (display (current-date))
@@ -270,8 +276,8 @@
               (population (repeat popsize (lambda () (begin
                                                        (reset-store-xrp-draws) ;;FIXME!! this is to avoid accumulating xrp-draws...
                                                        (if (null? start-address)
-                                                           (rejection-initializer (apply temps->nfqp (first temps)))
-                                                           (rejection-addressed-initializer (apply temps->nfqp (first temps)) (first start-address)))
+                                                           (reset-with-proposer-calls (rejection-initializer (apply temps->nfqp (first temps))))
+                                                           (reset-with-proposer-calls (rejection-addressed-initializer (apply temps->nfqp (first temps)) (first start-address))))
 
                                                        ))))
               (weights (make-list popsize 0)))

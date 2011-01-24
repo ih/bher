@@ -21,7 +21,9 @@
             (display ".. passed.\n")))))
 
 
-(define (flip-proposer value) (not value 0.0 0.0)) 
+(define (flip-proposer value)
+  (let ([db (pretty-print "proposer 1")])
+  (list (not value) 0.0 0.0)))
 
 (with-proposer-test (repeat runs
                             (lambda ()
@@ -34,20 +36,26 @@
                     error-tolerance
                     "random, no query" )
 
+(define (flip-proposer2 value)
+  (let ([db (pretty-print "proposer 2")])
+    (list #t 1000.0 0.0)))
+
 (with-proposer-test (repeat runs
                             (lambda ()
                               (mh-query samples lag
-                                        (define a (/ 1 1000))
+                                        (define a (/ 1 3))
+                                        (define b ((lambda () (flip a))))
                                         a
-                                        (flip a) )))
+                                        b )))
                     (repeat runs
                             (lambda ()
                               (mh-query samples lag
-                                        (define a (/ 1 1000))
+                                        (define a (/ 1 3))
+                                        (define b ((with-proposer (lambda () (flip a)) flip-proposer2)))
                                         a
-                                        (flip a) )))
+                                        b)))
                     (lambda (b) b)
-                    (/ 1 1000)
+                    (/ 1 3)
                     0.0 ;;error-tolerance
                     "setting a flip" )
 
