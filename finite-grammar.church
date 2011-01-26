@@ -1,0 +1,82 @@
+;; (define expressions
+;;   (all-iterated-compressions (test-expr)))
+
+;; (pretty-print (map (lambda (x) (inline x 0.0 0.0)) expressions))
+
+(define expressions (test-exprs))
+(define p (uniform-draw expressions))
+(pretty-print  p)
+(define (choose-expr) (uniform-draw (test-exprs)))
+(pretty-print  (map (lambda (x) (lazy-equal? x p 1)) expressions))
+(pretty-print  (map (lambda (x) (first (lazy-list->list x 1))) expressions))
+;; (define (abstraction-proposer expr)
+;;   (let* ([program+scores (abstraction-move expr)]
+;;          [renamed-program (normalize-names (first program+scores))]
+;;          [scores (rest program+scores)])
+;;     (pair renamed-program scores)))
+
+;; (mh-query
+;;  100 20
+;;  (define (choose-expr) (list->lazy-list (uniform-draw (test-exprs))))
+;;  (define program ((with-proposer choose-expr abstraction-proposer)))
+;;  (lazy-list->all-list program)
+;;  #t)
+
+(define samples 100)
+(define lag 20)
+(define runs 5)
+(define error-tolerance 0.07)
+
+
+(define (with-proposer-test distribution with-proposer-distribution expectation-fn true-expectation tolerance name)
+  (begin
+    (pretty-print name)
+    (display "with-proposer NOT used....")
+    (check-test distribution expectation-fn true-expectation tolerance name)
+    (display "with-proposer used....")
+    (check-test with-proposer-distribution expectation-fn true-expectation tolerance name)))
+
+(define (check-test info expectation-fn true-expectation tolerance name)
+    (begin
+      (let* ([estimates (map (lambda (run) (mean (map expectation-fn run))) info)]
+             [errors (map (lambda (estimate) (abs (- estimate true-expectation))) estimates)]
+             [mean-abs-error (mean errors)])
+        (if (> mean-abs-error tolerance)
+            (for-each display (list ".. failed! true expectation: "  true-expectation ", test mean: " (mean estimates) "\n"))
+            (display ".. passed.\n")))))
+
+(define (abstraction-proposer expr)
+  (let* ([program+scores (abstraction-move expr)]
+         [renamed-program (normalize-names (first program+scores))]
+         [scores (rest program+scores)])
+    (pair renamed-program scores)))
+
+
+(with-proposer-test (repeat runs
+                            (lambda ()
+                              (mh-query
+                               samples lag
+                               (define (choose-expr) (list->lazy-list (uniform-draw (test-exprs))))
+                               (define program (choose-expr))
+                               (lazy-list->all-list program)
+                               #t)))
+                               ;;(eq? (eval program) #t))))
+                    (repeat runs
+                            (lambda ()
+                              (mh-query
+                               100 20
+                               (define (choose-expr) (list->lazy-list (uniform-draw (test-exprs))))
+                               (define program ((with-proposer choose-expr abstraction-proposer)))
+                               (lazy-list->all-list program)
+                               #t)))
+
+                               ;;(eq? (eval program) #t))))
+                    (lambda (x) (let ()
+                                    ;;([db (pretty-print (list x (first (third x))))])
+                                    (if (equal? (first (third x)) 'define) 1 0)))
+                    .50
+                    0.0
+                    "grammar test")
+                    
+
+
