@@ -15,7 +15,7 @@
            [new-program-score (scorer '() new-program)]
            [db (pretty-print (list "scoring old program" new-program))]
            [old-program-score (scorer '() program)])
-      (list new-program (+ abstraction-fw-prob new-program-score) (+ abstraction-bw-prob old-program-score))))) 
+      (list new-program (+ abstraction-fw-prob new-program-score) (+ abstraction-bw-prob old-program-score)))))
 
 ;;creates a function that takes a program and returns the probability of generating the program from the grammar
 (define (make-scorer grammar)
@@ -32,8 +32,13 @@
 
 (define (make-temps-nfqp target-program grammar)
   (lambda (temp)
-;;    (lambda () (pair (lazy-equal? (grammar) target-program temp) (lambda () 'error)))))
-    (lambda () (begin (define p (grammar)) (pair (lazy-equal? p target-program temp) (lambda () (first (lazy-list->list p temp))))))))
+;; (lambda () (pair (lazy-equal? (grammar) target-program temp) (lambda () 'error)))))
+    (lambda ()
+      (begin
+        (define p (grammar))
+        (pair (lazy-equal? p target-program temp) (lambda () (first (lazy-list->list p temp))))))))
+;;    (let ([p (grammar)])
+;;      (pair (lazy-equal? p target-program temp) (lambda () (first (lazy-list->list p temp)))))))
 
 ;;for constructing 'erp-like' xrps that don't have any hyperparams or stats.
 (define (make-stateless-xrp xrp-name sampler scorer . optional-args)
@@ -65,7 +70,7 @@
 
 
 (define flip (make-stateless-xrp 'flip
-                                 (lambda w  (if (null? w)
+                                 (lambda w (if (null? w)
                                                 (< (random-real) 0.5)
                                                 (< (random-real) (car w)) ))
                                  (lambda (args val)
@@ -165,7 +170,7 @@
 
 (define (permute lst) (map (lambda (ind) (list-ref lst ind)) (random-permutation (length lst))))
 
-(define (make-dirichlet-discrete hyp) (make-xrp 'dirichlet-discrete 
+(define (make-dirichlet-discrete hyp) (make-xrp 'dirichlet-discrete
                                                 (lambda (stats hyperparams args) ;;sampler
                                                   (let* ((counts (map + stats hyperparams))
                                                          (total-counts (apply + counts))
@@ -189,7 +194,7 @@
                                                                 (drop stats (+ 1 value)))
                                                         (+ (log (+ -1 (list-ref stats value) (list-ref hyperparams value)))
                                                            (- (log (+ -1 (apply + stats) (apply + hyperparams)))))))
-                                                'dirichlet-discrete-scorer  ;;FIXME. this isn't currently used, but may be for incremental method (on hyperparams change).
+                                                'dirichlet-discrete-scorer ;;FIXME. this isn't currently used, but may be for incremental method (on hyperparams change).
                                                 (make-list (length hyp) 0.0)
                                                 hyp
                                                 '();dirichlet-discrete-uniform-proposer

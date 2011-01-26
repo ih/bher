@@ -23,7 +23,6 @@
   (let* ([db (pretty-print "with-proposer")]
          [chosen (addbox-draw-item with-proposer-calls)]
          ;;[db (pretty-print (list "number of calls" (length with-proposer-calls)))]
-         [address (with-proposer-call-address chosen)]
          [old-value (lazy-list->all-list (with-proposer-call-value chosen))]
          [db (pretty-print (list "old value" old-value))]
          [new-value+scores ((with-proposer-call-proposer chosen) old-value)]
@@ -32,14 +31,20 @@
          [new-value (list->lazy-list (first new-value+scores))]
          [fw-prob (second new-value+scores)]
          [bw-prob (third new-value+scores)]
-         [temps-nfqp (make-temps-nfqp new-value (with-proposer-call-proc chosen))]
+         [interventions (find-random-choices new-value chosen state)])
+    (list fw-prob bw-prob interventions)))
+
+(define (find-random-choices new-value chosen state)
+  (let* ([temps-nfqp (make-temps-nfqp new-value (with-proposer-call-proc chosen))]
          [depths (map list (iota (compute-depth new-value)))]
+         [address (with-proposer-call-address chosen)]
          ;;[db (pretty-print (list "the depths" depths))]
          [states (smc-core depths 1 2 temps-nfqp '())]
          ;;[db (pretty-print (list "smc-core complete"))]
          [xrp-draws (map rest (mcmc-state->xrp-draws (first states)))]
          [interventions (map (make-interventions address (get-xrp-ticks state)) xrp-draws)])
-    (list fw-prob bw-prob interventions)))
+    interventions))
+  
 
 (define (get-xrp-ticks mcmc-state)
   (let* ([draws-addbox (mcmc-state->xrp-draws mcmc-state)]
@@ -91,7 +96,7 @@
                ;;[db (pretty-print (list "xrps" (length (mcmc-state->xrp-draws state)) (mcmc-state->xrp-draws state)))]
                [none (reset-with-proposer-calls state)]
                ;;"interventions about to do basic cfupdate" (length interventions) (map first interventions)
-               ;;[db (if (> (length interventions) 1) (pretty-print (list  "uncompressed-state xrp-draw number"  (mcmc-state->query-value state) (mcmc-state->xrp-draws state))) '())]
+               ;;[db (if (> (length interventions) 1) (pretty-print (list "uncompressed-state xrp-draw number" (mcmc-state->query-value state) (mcmc-state->xrp-draws state))) '())]
                ;;[db (pretty-print (list "about to cf in bpd" (length interventions)))]
                [ret2 (apply counterfactual-update (append (list state normal-form-proc) interventions))]
                ;;[db (pretty-print "cf in bpd complete")]
@@ -122,7 +127,7 @@
          [random-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc))]
          [db (pretty-print (list "random state created" (mcmc-state->query-value random-state)))]
          [fixed-val-state (make-mcmc-state (mcmc-state->store random-state) (pair #t (lambda () expr)) (mcmc-state->address random-state))]
-         [with-proposer-calls (mcmc-state->with-proposer-calls fixed-val-state)] ;;should contain single call  due to exectution of cf-update
+         [with-proposer-calls (mcmc-state->with-proposer-calls fixed-val-state)] ;;should contain single call due to exectution of cf-update
          [modified-proposer-calls (initializer-proposer-calls with-proposer-calls expr)]
          [db (pretty-print (list "with-proposer-calls created" (length with-proposer-calls) "modded proposer calls" modified-proposer-calls))]
          [interventions (third (run-with-proposer modified-proposer-calls fixed-val-state))]
@@ -173,9 +178,9 @@
                 (when verbose-init
                       (for-each display
                                 (list "annealing-initializer:\n"
-                                      "  temps remaining: " (length temps)
-                                      "\n  current temp: " (first temps)
-                                      "\n  current val: " (mcmc-state->query-value mcmc-state) "\n")))
+                                      " temps remaining: " (length temps)
+                                      "\n current temp: " (first temps)
+                                      "\n current val: " (mcmc-state->query-value mcmc-state) "\n")))
                 (let* ([nfqp (apply temps->nfqp (first temps))]
                        [rescored-state (first (counterfactual-update mcmc-state nfqp))]
                        [rej-state ((basic-repeat-kernel rej-steps nfqp) rescored-state)])
@@ -203,14 +208,14 @@
 
 ;; ;; mixture kernel
 ;; (define (mixture-kernel cdf . kernels )
-;;   (lambda (state)
-;;     (let ((u (uniform)))
-;;       (let loop ((kernels kernels)
-;;                  (cdf cdf) )
-;;         (if (<= u (car cdf))
-;;             ((car kernels) state)
-;;             (loop (cdr kernels)
-;;                   (cdr cdf) ))))))
+;; (lambda (state)
+;; (let ((u (uniform)))
+;; (let loop ((kernels kernels)
+;; (cdf cdf) )
+;; (if (<= u (car cdf))
+;; ((car kernels) state)
+;; (loop (cdr kernels)
+;; (cdr cdf) ))))))
 
 ;; cycle kernel
 (define (cycle-kernel . kernels)

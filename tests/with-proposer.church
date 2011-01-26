@@ -30,13 +30,13 @@
 ;;  (list a b)
 ;;  (foo))
 
-;; (mh-query
-;;  10 10
-;;  (define (xor a b) (not (eq? a b)))
-;;  (define vals (lambda () (lazy-list (flip) (flip))))
-;;  (define two-flips (lazy-list->all-list (vals)))
-;;  two-flips
-;;  (apply xor two-flips))
+(mh-query
+ 10 10
+ (define (xor a b) (not (eq? a b)))
+ (define vals (lambda () (lazy-list (flip) (flip))))
+ (define two-flips (lazy-list->all-list (vals)))
+ two-flips
+ (apply xor two-flips))
 
 
 (define (switch-proposer value)
