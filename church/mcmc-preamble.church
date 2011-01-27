@@ -38,6 +38,7 @@
          [none (reset-with-proposer-calls state)]
          [ret2 (apply counterfactual-update (append (list state nfqp) interventions))]
          [proposal-state (first ret2)])
+         ;;[db (pretty-print "end of with-proposer")])
     (list (- bw-prob fw-prob) proposal-state)))
 
 (define (find-random-choices new-value chosen state)
@@ -86,6 +87,7 @@
          [ret2 (apply counterfactual-update (append (list state nfqp) (list (pair chosen proposed-val))))]
          [proposal-state (first ret2)]
          [cd-bw/fw (second ret2)]
+         ;;[db (pretty-print "computing ind-bw ind-fw")]
          [ind-fw (- (log (addbox-size (mcmc-state->xrp-draws state))))]
          [ind-bw (- (log (addbox-size (mcmc-state->xrp-draws proposal-state))))])
     (list (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) proposal-state)))
@@ -184,7 +186,9 @@
            (proposal-state (second ret))
            (old-p (scorer state))
            (new-p (scorer proposal-state))
+           ;;[db (pretty-print (list "computing acceptance flip" (min 0.0 (+ (- new-p old-p) bw/fw))))]
            (accept (log-flip (min 0.0 (+ (- new-p old-p) bw/fw))))
+           ;;[db (pretty-print (list "acceptance computed" accept))]
            ;;[db (if (> (length (mcmc-state->with-proposer-calls state)) 0) (pretty-print (list "accepted?" accept "same-state proposed:" (equal? (mcmc-state->query-value proposal-state) (mcmc-state->query-value state)))) '())]
            ;(dummy (if accept (display "--accept--\n") (display "--reject--\n")))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
@@ -292,7 +296,9 @@
                            cd-bw/fw))
              
              ;;resample and reset weights (optional).
+             ;;[db (pretty-print "resampling in smc-core")]
              (resample-distribution (map exp (log-normalize weights)))
+             ;;[db (pretty-print "resampling complete")]
              (collapse? (nan? (first resample-distribution))))
         (if collapse?
             (let ();;[db (pretty-print (list "collapse!!!" popsize))])
