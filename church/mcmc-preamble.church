@@ -7,19 +7,22 @@
 ;;NOTE: since these are church procedures, the xrp-list will accumulate draws due to accept/reject decisions and proposals. will this cause bad slowdown?
 
 
-;;should return a list of interventions so run-with-proposer and run-xrp-proposer should return lists of interventio
-(define (propose-interventions xrp-draws with-proposer-calls state)
-  (cond [(none? xrp-draws) (run-with-proposer with-proposer-calls state)]
-        [(none? with-proposer-calls) (run-xrp-proposer xrp-draws state)]
-        [else (if (flip)
-                  (run-with-proposer with-proposer-calls state)
-                  (run-xrp-proposer xrp-draws state))]))
+(define (basic-proposal-distribution state normal-form-proc)
+  (let* (;;[db (pretty-print "entering basic-proposal-distribution")]
+         [xrp-draws (mcmc-state->xrp-draws state)]
+         [with-proposer-calls (mcmc-state->with-proposer-calls state)])
+    (cond [(and (none? xrp-draws) (none? with-proposer-calls)) (trivial-proposal state)]
+          [(none? xrp-draws) (run-with-proposer with-proposer-calls state normal-form-proc)]
+          [(none? with-proposer-calls) (run-xrp-proposer xrp-draws state normal-form-proc)]
+          [else (if (flip)
+                    (run-with-proposer with-proposer-calls state normal-form-proc)
+                    (run-xrp-proposer xrp-draws state normal-form-proc))])))
 
 (define none? addbox-empty?)
 
 (define (addbox-draw-item addbox) (rest (uniform-draw (addbox->alist addbox))))
 
-(define (run-with-proposer with-proposer-calls state)
+(define (run-with-proposer with-proposer-calls state nfqp)
   (let* (;;[db (pretty-print "with-proposer")]
          [chosen (addbox-draw-item with-proposer-calls)]
          ;;[db (pretty-print (list "number of calls" (length with-proposer-calls)))]
@@ -31,8 +34,11 @@
          [new-value (first new-value+scores)]
          [fw-prob (second new-value+scores)]
          [bw-prob (third new-value+scores)]
-         [interventions (find-random-choices new-value chosen state)])
-    (list fw-prob bw-prob interventions)))
+         [interventions (find-random-choices new-value chosen state)]
+         [none (reset-with-proposer-calls state)]
+         [ret2 (apply counterfactual-update (append (list state nfqp) interventions))]
+         [proposal-state (first ret2)])
+    (list (- bw-prob fw-prob) proposal-state)))
 
 (define (find-random-choices new-value chosen state)
   (let* ([new-value (list->lazy-list new-value)]
@@ -46,7 +52,6 @@
          [interventions (map (make-interventions address (get-xrp-ticks state)) xrp-draws)])
     interventions))
   
-
 (define (get-xrp-ticks mcmc-state)
   (let* ([draws-addbox (mcmc-state->xrp-draws mcmc-state)]
          [xrp-draw (rest (first draws-addbox))])
@@ -68,8 +73,7 @@
 (define (adjust-address address init-address)
   (append (drop-right address 1) init-address))
 
-
-(define (run-xrp-proposer xrp-draws state)
+(define (run-xrp-proposer xrp-draws state nfqp)
   (let* (;;[db (if (> (length (mcmc-state->with-proposer-calls state)) 0) (pretty-print "xrp-proposer") '())]
          [chosen (addbox-draw-item xrp-draws)]
          ;;[db (if (> (length (mcmc-state->with-proposer-calls state)) 0) (pretty-print (list "old-value" (xrp-draw-value chosen))) '())]
@@ -78,34 +82,14 @@
          ;;[db (if (> (length (mcmc-state->with-proposer-calls state)) 0) (pretty-print (list "new-value" proposed-val)) '())]
          ;;[db (pretty-print (list "proposed-value proposed-val" (xrp-draw-address chosen) proposed-val))]
          [proposal-fw-score (second ret1)]
-         [proposal-bw-score (third ret1)])
-    (list proposal-fw-score proposal-bw-score (list (pair chosen proposed-val)))))
+         [proposal-bw-score (third ret1)]
+         [ret2 (apply counterfactual-update (append (list state nfqp) (list (pair chosen proposed-val))))]
+         [proposal-state (first ret2)]
+         [cd-bw/fw (second ret2)]
+         [ind-fw (- (log (addbox-size (mcmc-state->xrp-draws state))))]
+         [ind-bw (- (log (addbox-size (mcmc-state->xrp-draws proposal-state))))])
+    (list (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) proposal-state)))
 
-(define (basic-proposal-distribution state normal-form-proc)
-  (let* (;;[db (pretty-print "entering basic-proposal-distribution")]
-         [xrp-draws (mcmc-state->xrp-draws state)]
-         [with-proposer-calls (mcmc-state->with-proposer-calls state)])
-    (if (and (none? xrp-draws) (none? with-proposer-calls) trivial-proposal)
-        (trivial-proposal state)
-        (let* (;;[db (pretty-print (list "before compression xrp-draw number" (length (store->xrp-draws (mcmc-state->store state))) (mcmc-state->query-value state) (mcmc-state->xrp-draws state)))]
-               [scores+interventions (propose-interventions xrp-draws with-proposer-calls state)]
-
-               [proposal-fw-score (first scores+interventions)]
-               [proposal-bw-score (second scores+interventions)]
-               [interventions (third scores+interventions)]
-               ;;[db (pretty-print (list "interventions made" interventions))]
-               ;;[db (pretty-print (list "xrps" (length (mcmc-state->xrp-draws state)) (mcmc-state->xrp-draws state)))]
-               [none (reset-with-proposer-calls state)]
-               ;;"interventions about to do basic cfupdate" (length interventions) (map first interventions)
-               ;;[db (if (> (length interventions) 1) (pretty-print (list "uncompressed-state xrp-draw number" (mcmc-state->query-value state) (mcmc-state->xrp-draws state))) '())]
-               ;;[db (pretty-print (list "about to cf in bpd" (length interventions)))]
-               [ret2 (apply counterfactual-update (append (list state normal-form-proc) interventions))]
-               ;;[db (pretty-print "cf in bpd complete")]
-               [proposal-state (first ret2)]
-               [cd-bw/fw (second ret2)]
-               [ind-fw (- (log (addbox-size (mcmc-state->xrp-draws state))))]
-               [ind-bw (- (log (addbox-size (mcmc-state->xrp-draws proposal-state))))])
-          (list (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) proposal-state)))))
 (define (trivial-proposal state) (list 0.0 state))
 
 ;;FIXME!! this works badly... need constraint prop to do this right.
@@ -131,10 +115,11 @@
          [with-proposer-calls (mcmc-state->with-proposer-calls fixed-val-state)] ;;should contain single call due to exectution of cf-update
          [modified-proposer-calls (initializer-proposer-calls with-proposer-calls expr)]
          [db (pretty-print (list "with-proposer-calls created" (length with-proposer-calls) "modded proposer calls" modified-proposer-calls))]
-         [interventions (third (run-with-proposer modified-proposer-calls fixed-val-state))]
-         [db (pretty-print (list "interventions created" (length interventions)))]
-         [init-state (first (apply counterfactual-update (append (list fixed-val-state normal-form-proc) interventions)))]
-         [db (pretty-print "initial state created")]
+         [init-state (second (run-with-proposer modified-proposer-calls fixed-val-state normal-form-proc))]
+         ;; [interventions (third (run-with-proposer modified-proposer-calls fixed-val-state))]
+         ;; [db (pretty-print (list "interventions created" (length interventions)))]
+         ;; [init-state (first (apply counterfactual-update (append (list fixed-val-state normal-form-proc) interventions)))]
+         ;; [db (pretty-print "initial state created")]
          )
     init-state))
 ;;sets the value of the proposer call to expr
