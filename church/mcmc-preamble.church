@@ -10,7 +10,8 @@
 (define (basic-proposal-distribution state normal-form-proc)
   (let* (;;[db (pretty-print "entering basic-proposal-distribution")]
          [xrp-draws (mcmc-state->xrp-draws state)]
-         [with-proposer-calls (mcmc-state->with-proposer-calls state)])
+         [with-proposer-calls (mcmc-state->with-proposer-calls state)]
+         [prob-proposer-type .5])
     (cond [(and (none? xrp-draws) (none? with-proposer-calls)) (trivial-proposal state)]
           [(none? xrp-draws) (run-with-proposer with-proposer-calls state normal-form-proc)]
           [(none? with-proposer-calls) (run-xrp-proposer xrp-draws state normal-form-proc)]
@@ -35,7 +36,7 @@
          [fw-prob (second new-value+scores)]
          [bw-prob (third new-value+scores)]
          [interventions (find-random-choices new-value chosen state)]
-         [none (reset-with-proposer-calls state)]
+         [none (reset-with-proposer-calls state)]  ;;the counterfactual-update will make new with-proposer-calls
          [ret2 (apply counterfactual-update (append (list state nfqp) interventions))]
          [proposal-state (first ret2)])
          ;;[db (pretty-print "end of with-proposer")])
@@ -190,6 +191,7 @@
            (accept (log-flip (min 0.0 (+ (- new-p old-p) bw/fw))))
            ;;[db (pretty-print (list "acceptance computed" accept))]
            ;;[db (if (> (length (mcmc-state->with-proposer-calls state)) 0) (pretty-print (list "accepted?" accept "same-state proposed:" (equal? (mcmc-state->query-value proposal-state) (mcmc-state->query-value state)))) '())]
+           [db (if (> (length (mcmc-state->with-proposer-calls state)) 0) (pretty-print (list "current-state" (mcmc-state->query-value state) (exp old-p) "proposed state" (mcmc-state->query-value proposal-state) (exp new-p))) '())]
            ;(dummy (if accept (display "--accept--\n") (display "--reject--\n")))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
       (if accept

@@ -1,4 +1,4 @@
-(define samples 1000)
+(define samples 5000)
 (define lag 20)
 (define runs 1)
 (define error-tolerance 0.07)
@@ -17,47 +17,47 @@
              [errors (map (lambda (estimate) (abs (- estimate true-expectation))) estimates)]
              [mean-abs-error (mean errors)])
         (if (> mean-abs-error tolerance)
-            (for-each display (list ".. failed! true expectation: "  true-expectation ", test mean: " (mean estimates) "\n"))
+            (for-each display (list ".. failed! true expectation: "  true-expectation ", test mean: " (* (mean estimates) 1.) "\n"))
             (display ".. passed.\n")))))
 
 
-;; (define (flip-proposer value)
-;;   (let ([db (pretty-print "proposer 1")])
-;;   (list (not value) 0.0 0.0)))
+(define (flip-proposer value)
+  (let ([db (pretty-print "proposer 1")])
+  (list (not value) 0.0 0.0)))
 
-;; (with-proposer-test (repeat runs
-;;                             (lambda ()
-;;                               (repeat samples (lambda () (flip 0.7)))))
-;;                     (repeat runs
-;;                             (lambda ()
-;;                               (repeat samples (with-proposer (lambda () (flip 0.7)) flip-proposer))))
-;;                     (lambda (x) (if x 1 0))
-;;                     0.7
-;;                     error-tolerance
-;;                     "random, no query" )
+(with-proposer-test (repeat runs
+                            (lambda ()
+                              (repeat samples (lambda () (flip 0.7)))))
+                    (repeat runs
+                            (lambda ()
+                              (repeat samples (with-proposer (lambda () (flip 0.7)) flip-proposer))))
+                    (lambda (x) (if x 1 0))
+                    0.7
+                    error-tolerance
+                    "random, no query" )
 
-;; (define (flip-proposer2 value)
-;;   (let ([db (pretty-print "proposer 2")])
-;;     (list #t 0.0 0.0)))
+(define (flip-proposer2 value)
+  (let ([db (pretty-print "proposer 2")])
+    (list #t 0.0 0.0)))
 
-;; (with-proposer-test (repeat runs
-;;                             (lambda ()
-;;                               (mh-query samples lag
-;;                                         (define a (/ 1 3))
-;;                                         (define b ((lambda () (flip a))))
-;;                                         a
-;;                                         b )))
-;;                     (repeat runs
-;;                             (lambda ()
-;;                               (mh-query samples lag
-;;                                         (define a (/ 1 3))
-;;                                         (define b ((with-proposer (lambda () (flip a)) flip-proposer2)))
-;;                                         a
-;;                                         b)))
-;;                     (lambda (b) b)
-;;                     (/ 1 3)
-;;                     0.0 ;;error-tolerance
-;;                     "setting a flip" )
+(with-proposer-test (repeat runs
+                            (lambda ()
+                              (mh-query samples lag
+                                        (define a (/ 1 3))
+                                        (define b ((lambda () (flip a))))
+                                        a
+                                        b )))
+                    (repeat runs
+                            (lambda ()
+                              (mh-query samples lag
+                                        (define a (/ 1 3))
+                                        (define b ((with-proposer (lambda () (flip a)) flip-proposer2)))
+                                        a
+                                        b)))
+                    (lambda (b) b)
+                    (/ 1 3)
+                    0.0 ;;error-tolerance
+                    "setting a flip" )
 
 ;;xor test
 (define (switch-proposer value)

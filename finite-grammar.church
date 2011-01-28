@@ -22,9 +22,9 @@
 ;;  (lazy-list->all-list program)
 ;;  #t)
 
-(define samples 1000)
+(define samples 10)
 (define lag 20)
-(define runs 5)
+(define runs 1)
 (define error-tolerance 0.07)
 
 
