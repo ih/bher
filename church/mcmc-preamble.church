@@ -191,7 +191,7 @@
            (accept (log-flip (min 0.0 (+ (- new-p old-p) bw/fw))))
            ;;[db (pretty-print (list "acceptance computed" accept))]
            ;;[db (if (> (length (mcmc-state->with-proposer-calls state)) 0) (pretty-print (list "accepted?" accept "same-state proposed:" (equal? (mcmc-state->query-value proposal-state) (mcmc-state->query-value state)))) '())]
-           [db (if (> (length (mcmc-state->with-proposer-calls state)) 0) (pretty-print (list "current-state" (mcmc-state->query-value state) (exp old-p) "proposed state" (mcmc-state->query-value proposal-state) (exp new-p))) '())]
+           ;;[db (if (> (length (mcmc-state->with-proposer-calls state)) 0) (pretty-print (list "current-state" (mcmc-state->query-value state) (exp old-p) "proposed state" (mcmc-state->query-value proposal-state) (exp new-p) "ln(bw/fw):" bw/fw)) '())]
            ;(dummy (if accept (display "--accept--\n") (display "--reject--\n")))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
       (if accept

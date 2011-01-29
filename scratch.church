@@ -1,5 +1,5 @@
-(apply or (repeat 1000 (lambda () (log-flip -inf.0))))
-;;(compressions (test-expr))
+;;(apply or (repeat 1000 (lambda () (log-flip -inf.0))))
+(compressions (test-expr))
 ;; (compressions (test-expr))
 ;; (pretty-print (test-expr))
 ;; (normalize-names (test-expr))
