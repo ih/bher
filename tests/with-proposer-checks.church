@@ -1,4 +1,4 @@
-(define samples 5000)
+(define samples 1000)
 (define lag 20)
 (define runs 1)
 (define error-tolerance 0.07)

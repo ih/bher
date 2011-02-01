@@ -212,9 +212,7 @@
          (let* ([with-proposer-calls (store->with-proposer-calls store)]
                 [value (proc call-address store)]
                 [new-call (make-with-proposer-call call-address value proposer proc)]
-                ;;[db (pretty-print (list "with-proposer-called " call-address))]
                 [new-proposer-calls (add/replace-into-addbox with-proposer-calls call-address new-call)]
-                ;;[db (pretty-print (list "proposer-calls after " new-proposer-calls))]
                 [new-store (make-store (store->xrp-draws store)
                                        (store->xrp-stats store)
                                        (store->score store)
