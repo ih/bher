@@ -19,8 +19,8 @@
  (church compiler)
  (rnrs eval)
  ;;non-standard libraries
- (pi lazy)
- (pi abstract)
+ (lazy)
+ (abstract)
  (util)
  (sym)
  (testing)
