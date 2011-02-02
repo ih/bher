@@ -6,14 +6,14 @@
 
 ;;NOTE: since these are church procedures, the xrp-list will accumulate draws due to accept/reject decisions and proposals. will this cause bad slowdown?
 
-
+;;choose between doing the original proposal mechanism (choosing a random choice and resampling) or using a custom proposer attached to a procedure in the query 
 (define (basic-proposal-distribution state normal-form-proc)
   (let* ([xrp-draws (mcmc-state->xrp-draws state)]
          [with-proposer-calls (mcmc-state->with-proposer-calls state)])
     (cond [(and (none? xrp-draws) (none? with-proposer-calls)) (trivial-proposal state)]
           [(none? xrp-draws) (run-with-proposer with-proposer-calls state normal-form-proc)]
           [(none? with-proposer-calls) (run-xrp-proposer xrp-draws state normal-form-proc)]
-          [else (if (flip 1)
+          [else (if (flip)
                     (run-with-proposer with-proposer-calls state normal-form-proc)
                     (run-xrp-proposer xrp-draws state normal-form-proc))])))
 
@@ -44,12 +44,22 @@
          [xrp-draws (map rest (mcmc-state->xrp-draws (first states)))]
          [interventions (map (make-interventions address (get-xrp-ticks state)) xrp-draws)])
     interventions))
+
+;; make a function that can make nfqps for the smc process
+(define (make-temps-nfqp target-value proc)
+  (lambda (temp)
+    (lambda ()
+      (begin
+        (define p (proc))
+        (pair (lazy-equal? p target-value temp) (lambda () (first (lazy-list->list p temp))))))))
+
   
 (define (get-xrp-ticks mcmc-state)
   (let* ([draws-addbox (mcmc-state->xrp-draws mcmc-state)]
          [xrp-draw (rest (first draws-addbox))])
     (xrp-draw-ticks xrp-draw)))
-    
+
+;;modify an xrp-draw that was created during smc to have the right address and xrp-ticks and package it as an intervention for counterfactual-update
 (define (make-interventions init-address state-xrp-ticks)
   (lambda (xrp-draw)
     (let* ([address (xrp-draw-address xrp-draw)]
@@ -66,6 +76,7 @@
 (define (adjust-address address init-address)
   (append (drop-right address 1) init-address))
 
+;;performs the original basic proposals
 (define (run-xrp-proposer xrp-draws state nfqp)
   (let* ([chosen (addbox-draw-item xrp-draws)]
          [ret1 ((xrp-draw-proposer chosen) state)]
@@ -88,6 +99,7 @@
         (rejection-initializer normal-form-proc)
         proposal-state)))
 
+;; used when with-proposer is used (specifically by smc-core) to get random choices for a proposed value
 (define (rejection-addressed-initializer normal-form-proc start-address)
     (let* ([init-state (make-addressed-initial-mcmc-state start-address)]
            [proposal-state (first (counterfactual-update init-state normal-form-proc))]) ;;don't care about bw/fw for init.
@@ -95,6 +107,7 @@
           (rejection-addressed-initializer normal-form-proc start-address)
           proposal-state)))
 
+;; used when the with-proposer procedure is a grammar  and we want to initialize the state to a particular expression
 (define (expr-initializer normal-form-proc expr)
   (let* ([random-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc))]
          [fixed-val-state (make-mcmc-state (mcmc-state->store random-state) (pair #t (lambda () expr)) (mcmc-state->address random-state))]
@@ -165,11 +178,7 @@
            (proposal-state (second ret))
            (old-p (scorer state))
            (new-p (scorer proposal-state))
-           ;;[db (pretty-print (list "computing acceptance flip" (min 0.0 (+ (- new-p old-p) bw/fw))))]
            (accept (log-flip (min 0.0 (+ (- new-p old-p) bw/fw))))
-           ;;[db (pretty-print (list "acceptance computed" accept))]
-           ;;[db (if (> (length (mcmc-state->with-proposer-calls state)) 0) (pretty-print (list "accepted?" accept "same-state proposed:" (equal? (mcmc-state->query-value proposal-state) (mcmc-state->query-value state)))) '())]
-           ;;[db (if (> (length (mcmc-state->with-proposer-calls state)) 0) (pretty-print (list "current-state" (mcmc-state->query-value state) (exp old-p) "proposed state" (mcmc-state->query-value proposal-state) (exp new-p) "ln(bw/fw):" bw/fw)) '())]
            ;(dummy (if accept (display "--accept--\n") (display "--reject--\n")))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
       (if accept
@@ -262,10 +271,7 @@
 
       (let* (;;(dummy (display (map mcmc-state->query-value population))) (dummy (display "\n"))
              ;;step forward temps.
-             ;;(db (pretty-print (list "the temp" (first temps))))
              (rets (map (lambda (state) (counterfactual-update state (apply temps->nfqp (first temps)))) population))
-
-             ;;(db (pretty-print "after the cf"))
              (new-population (map first rets))
              (cd-bw/fw (map second rets))
              (weights (map (lambda (old-weight old-state new-state cd-bw/fw) (+ old-weight
@@ -277,9 +283,7 @@
                            cd-bw/fw))
              
              ;;resample and reset weights (optional).
-             ;;[db (pretty-print "resampling in smc-core")]
              (resample-distribution (map exp (log-normalize weights)))
-             ;;[db (pretty-print "resampling complete")]
              (collapse? (nan? (first resample-distribution))))
         (if collapse?
             (let ();;[db (pretty-print (list "collapse!!!" popsize))])
@@ -293,11 +297,9 @@
                                         (multinomial new-population resample-distribution))))]
                    [weights (make-list popsize 0)]
                    ;;rejuvenate using kernel.
-                   ;;[db (pretty-print "rejuvenating kernel")]
                    [kernel (repeat-kernel lag (make-mh-kernel (lambda (state) (basic-proposal-distribution state (apply temps->nfqp (first temps))))
                                                               mcmc-state->score))]
                    [new3-population (map kernel new2-population)]
-                   ;;[db (pretty-print (list "rejuvenation complete" temps))]
                    )
               (begin ;;(map (lambda (x y) (begin (display " ")(display x)(display " ")(display y)(display "\n")))
                  ;;(map mcmc-state->query-value new3-population)

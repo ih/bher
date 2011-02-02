@@ -20,31 +20,10 @@
                                 (let () (define F1 (lambda (V1) (if V1 V1 V1))) (F1 (F1 #t)))
                                 (let () (define F1 (lambda (V1) (if V1 V1 V1))) (F1 (F1 #t)))
                                 (let () (if #t #f #t))))
-         ;;(define (test-expr) '(let () (define F1 (lambda (v1 v2) (F3))) (define F3 (lambda (v4 v6) (+ 2 2))) (define F2 (lambda () (+ a b))) 3))
+
          (define (trivial-expr) '(let () #t))
 
          
 
-         ;; (define (normalize-names expr)
-         ;;   (define ht (make-hash-table eqv?))
-         ;;   (define (traverse action expr)
-         ;;     (if (or (primitive? expr) (null? expr))
-         ;;         (if (or (func? expr) (var? expr))
-         ;;             (action expr)
-         ;;             expr)
-         ;;         (map (curry traverse action) expr)))
-         ;;   ;;build table
-         ;;   (define (add-to-table expr)
-         ;;     (if (func? expr)
-         ;;         (hash-table-set! ht expr (sym 'F))
-         ;;         (hash-table-set! ht expr (sym 'v))))
-         ;;   (define (relabel expr)
-         ;;     (hash-table-ref ht expr))
-         ;;   (reset-symbol-indizes!)
-         ;;   (let* ([signatures (sexpr->signatures expr)])
-         ;;     (traverse add-to-table signatures))
-
-         ;;   ;;(pretty-print (hash-table->alist ht))
-         ;;   (traverse relabel expr))
          )
          

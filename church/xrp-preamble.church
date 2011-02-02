@@ -1,60 +1,17 @@
 ;; authors: noah goodman (with help from jeff siskind, andreas stuhlmuller)
 
-
-;;creates a function that takes operands and the old xrp-value and returns a program, proposal-fw-score, and proposal-bw-score
-(define (make-proposer scorer)
-  (lambda (operands old-value)
-    (let* ([db (pretty-print (list "inside the proposer" old-value))]
-           [program (lazy-list->all-list old-value)]
-           [ret1 (abstraction-move program)] ;;change this back to abstraction-proposer once you have a proper grammar
-           [new-program (first ret1)]
-           [db (pretty-print (list "new program" new-program))]
-           [abstraction-fw-prob (second ret1)]
-           [abstraction-bw-prob (third ret1)]
-           [db (pretty-print (list "scoring new program" new-program))]
-           [new-program-score (scorer '() new-program)]
-           [db (pretty-print (list "scoring old program" new-program))]
-           [old-program-score (scorer '() program)])
-      (list new-program (+ abstraction-fw-prob new-program-score) (+ abstraction-bw-prob old-program-score)))))
-
-;;creates a function that takes a program and returns the probability of generating the program from the grammar
-(define (make-scorer grammar)
-  (lambda (args program)
-    (let* ([lazy-program (list->lazy-list program)]
-           [temps-nfqp (make-temps-nfqp lazy-program grammar)]
-           [depths (map list (iota (compute-depth lazy-program)))]
-           [db (pretty-print "new call to scorer")]
-           [states (smc-core depths 1 10 temps-nfqp)]
-
-           ;;all particles should be equal, make sure throw error if they are not
-           [score (mcmc-state->score (uniform-draw states))])
-      score)))
-
-(define (make-temps-nfqp target-program grammar)
-  (lambda (temp)
-;; (lambda () (pair (lazy-equal? (grammar) target-program temp) (lambda () 'error)))))
-    (lambda ()
-      (begin
-        (define p (grammar))
-        (pair (lazy-equal? p target-program temp) (lambda () (first (lazy-list->list p temp))))))))
-;;    (let ([p (grammar)])
-;;      (pair (lazy-equal? p target-program temp) (lambda () (first (lazy-list->list p temp)))))))
-
 ;;for constructing 'erp-like' xrps that don't have any hyperparams or stats.
 (define (make-stateless-xrp xrp-name sampler scorer . optional-args)
   (let ([proposer (get-proposer optional-args)]
         [support (get-support optional-args)])
     (make-xrp xrp-name
               (lambda (stats hyperparams args) ;;sample
-                (let ((value (apply sampler args))
-                      [db (if (equal? xrp-name "grammar-xrp") (pretty-print "wrapped sampler") '())])
+                (let ((value (apply sampler args)))
                   (list value stats (scorer args value))))
               (lambda (value stats hyperparams args) ;;incr-stats
-                (let ([db (if (equal? xrp-name "grammar-xrp") (pretty-print "incr-stats") '())])
-                  (list value stats (scorer args value))))
+                  (list value stats (scorer args value)))
               (lambda (value stats hyperparams args) ;;decr-stats
-                (let ([db (if (equal? xrp-name "grammar-xrp") (pretty-print "decr-stats") '())])
-                  (list value stats (scorer args value))))
+                  (list value stats (scorer args value)))
               'scorer;;FIXME
               '() ;;init-stats
               '() ;;hyperparams
