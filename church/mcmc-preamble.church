@@ -44,7 +44,7 @@
          [depths (map list (iota (compute-depth new-value)))]
          [address (with-proposer-call-address chosen)]
          [states (smc-core depths 1 2 temps-nfqp '())]
-         [xrp-draws (map rest (mcmc-state->xrp-draws (first states)))]
+         [xrp-draws (map rest (mcmc-state->xrp-draws (first states)))]  ;;assumes all states are the same
          [interventions (map (make-interventions address (get-xrp-ticks state)) xrp-draws)])
     interventions))
 
@@ -318,31 +318,11 @@
   (* old-pop-size 2))
 
 
-;;this version makes an xrp that is the marginal of (lambda (obs) (lazy-equal? (gen-sexpr) obs)).
-(define (smc-obs-marginalize gen-sexpr popsize)
-  (make-stateless-xrp
-   'marginalized-eq-obs-gen-sexpr
-   (lambda (obs) (lazy-equal? (gen-sexpr) obs)) ;;sampler
-   (lambda (args val) ;;scorer
-     (if val
-         (let* ((samples (smc-core (map list (iota (+ 1 (lazy-list-size (first args))))) popsize 0
-                                   (lambda (depth) (lambda () (let ((s (gen-sexpr)))
-                                                                (pair (lazy-equal? s (first args) depth)
-                                                                      (lambda () (first (lazy-list->list s depth)))))))))
-                ;;remove duplicates in order to do selective model averaging:
-                (samples (fold (lambda (s a) (if (member (mcmc-state->addrval s) (map mcmc-state->addrval a)) a (pair s a))) '() samples))
-                (scores (map mcmc-state->score samples))
-                (score (if (null? scores)
-                           -inf.0
-                           (apply log-sum-exp scores))))
-           score)
-                                        ;(begin (display score)(display "\n") score))
-         (log 0.9)) ;;FIXME!! proper scoring for being false?
-     )))
-
 ;;this version takes in a program to generate sexprs (as a sexpr) and compiles it before marginalizing.
-(define (smc-eval-obs-marginalize gen-sexpr popsize)
-  (let ((gen-sexrp (eval gen-sexpr)))
+(define (smc-eval-obs-marginalize gen-code popsize)
+  (let* (;;[db (pretty-print (list "gen-code" gen-code))]
+         (gen-sexpr (eval gen-code)))
+         ;;[db (pretty-print (list "gen-sexrp" gen-sexpr))])
   (make-stateless-xrp
    'marginalized-eq-obs-gen-sexpr
    (lambda (obs) (lazy-equal? (gen-sexpr) obs)) ;;sampler
@@ -364,10 +344,6 @@
      ))))
 
 
-(define (lazy-list-size a)
-  (if (lazy-pair? a)
-      (+ 1 (lazy-list-size (a 'first)) (lazy-list-size (a 'rest)))
-      1))
 
 
 (define (mcmc-state->addrval s) (map (lambda (d) (pair (xrp-draw-address d) (xrp-draw-value d))) (mcmc-state->xrp-draws s)) )
