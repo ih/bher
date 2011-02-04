@@ -9,6 +9,11 @@
                  (util)
                  (church readable-scheme))
 
+
+         (define (mean lst) (/ (apply + lst) (length lst)))
+
+         
+
          (define (test-expr) '(let () (if (if #t #t #t) (if #t #t #t) (if #t #t #t))))
 
          (define (e1) '(let () (define F1 (lambda (v1) (if v1 v1 v1))) (F1 (F1 #t))))

@@ -6,7 +6,10 @@
 
 ;;NOTE: since these are church procedures, the xrp-list will accumulate draws due to accept/reject decisions and proposals. will this cause bad slowdown?
 
-;;choose between doing the original proposal mechanism (choosing a random choice and resampling) or using a custom proposer attached to a procedure in the query 
+;;choose between doing the original proposal mechanism (choosing a random choice and resampling) or using a custom proposer attached to a procedure in the query
+
+
+
 (define (basic-proposal-distribution state normal-form-proc)
   (let* ([xrp-draws (mcmc-state->xrp-draws state)]
          [with-proposer-calls (mcmc-state->with-proposer-calls state)])
@@ -313,6 +316,62 @@
 
 (define (increase-population old-pop-size)
   (* old-pop-size 2))
+
+
+;;this version makes an xrp that is the marginal of (lambda (obs) (lazy-equal? (gen-sexpr) obs)).
+(define (smc-obs-marginalize gen-sexpr popsize)
+  (make-stateless-xrp
+   'marginalized-eq-obs-gen-sexpr
+   (lambda (obs) (lazy-equal? (gen-sexpr) obs)) ;;sampler
+   (lambda (args val) ;;scorer
+     (if val
+         (let* ((samples (smc-core (map list (iota (+ 1 (lazy-list-size (first args))))) popsize 0
+                                   (lambda (depth) (lambda () (let ((s (gen-sexpr)))
+                                                                (pair (lazy-equal? s (first args) depth)
+                                                                      (lambda () (first (lazy-list->list s depth)))))))))
+                ;;remove duplicates in order to do selective model averaging:
+                (samples (fold (lambda (s a) (if (member (mcmc-state->addrval s) (map mcmc-state->addrval a)) a (pair s a))) '() samples))
+                (scores (map mcmc-state->score samples))
+                (score (if (null? scores)
+                           -inf.0
+                           (apply log-sum-exp scores))))
+           score)
+                                        ;(begin (display score)(display "\n") score))
+         (log 0.9)) ;;FIXME!! proper scoring for being false?
+     )))
+
+;;this version takes in a program to generate sexprs (as a sexpr) and compiles it before marginalizing.
+(define (smc-eval-obs-marginalize gen-sexpr popsize)
+  (let ((gen-sexrp (eval gen-sexpr)))
+  (make-stateless-xrp
+   'marginalized-eq-obs-gen-sexpr
+   (lambda (obs) (lazy-equal? (gen-sexpr) obs)) ;;sampler
+   (lambda (args val) ;;scorer
+     (if val
+         (let* ((samples (smc-core (map list (iota (+ 1 (lazy-list-size (first args))))) popsize 0
+                                   (lambda (depth) (lambda () (let ((s (gen-sexpr)))
+                                                                (pair (lazy-equal? s (first args) depth)
+                                                                      (lambda () (first (lazy-list->list s depth)))))))))
+                ;;remove duplicates in order to do selective model averaging:
+                (samples (fold (lambda (s a) (if (member (mcmc-state->addrval s) (map mcmc-state->addrval a)) a (pair s a))) '() samples))
+                (scores (map mcmc-state->score samples))
+                (score (if (null? scores)
+                           -inf.0
+                           (apply log-sum-exp scores))))
+           score)
+                                        ;(begin (display score)(display "\n") score))
+         (log 0.9)) ;;FIXME!! proper scoring for being false?
+     ))))
+
+
+(define (lazy-list-size a)
+  (if (lazy-pair? a)
+      (+ 1 (lazy-list-size (a 'first)) (lazy-list-size (a 'rest)))
+      1))
+
+
+(define (mcmc-state->addrval s) (map (lambda (d) (pair (xrp-draw-address d) (xrp-draw-value d))) (mcmc-state->xrp-draws s)) )
+
 
  (define (log-sum-exp . log-vals)
    (let* ([max-log-val (apply max log-vals)])

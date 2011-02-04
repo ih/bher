@@ -28,6 +28,8 @@
                             (load "standard-preamble.church")
                             (load "xrp-preamble.church")
                             (load "mcmc-preamble.church")
+                            (load "trees.church")
+                            (load "testing.church")
                             ,@top-list))
           (ds-sexpr (de-sugar-all church-sexpr))
           ;;(db (pretty-print (list "desguared expression w/o preambles" (first top-list) (de-sugar-all (first top-list)))))

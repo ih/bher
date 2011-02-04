@@ -1,18 +1,4 @@
 
-
-(define (check-test info expectation-fn true-expectation tolerance name)
-  (begin
-    (display "inference test: ")(display name)
-    (let* ((estimates (map (lambda (run) (mean (map expectation-fn run))) info))
-           (errors (map (lambda (estimate) (abs (- estimate true-expectation))) estimates))
-           (mean-abs-error (mean errors))          
-           (std-error (sqrt (/ (mean (map (lambda (x) (* x x)) errors))
-                               (length errors)) ) )
-           )
-      (if (> mean-abs-error tolerance)
-          (for-each display (list ".. failed! true expectation: "  true-expectation ", test mean: " (mean estimates) "\n"))
-          (display ".. passed.\n")))))
-
 (define (equal?-test name test-val true-val)
   (begin
     (display "deterministic test: ")(display name)

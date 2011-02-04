@@ -4,24 +4,6 @@
 (define error-tolerance 0.05)
 
 
-(define (with-proposer-test distribution with-proposer-distribution expectation-fn true-expectation tolerance name)
-  (begin
-    (pretty-print name)
-    (display "with-proposer NOT used....")
-    (check-test distribution expectation-fn true-expectation tolerance name)
-    (display "with-proposer used....")
-    (check-test with-proposer-distribution expectation-fn true-expectation tolerance name)))
-
-(define (check-test info expectation-fn true-expectation tolerance name)
-    (begin
-      (let* ([estimates (map (lambda (run) (mean (map expectation-fn run))) info)]
-             [errors (map (lambda (estimate) (abs (- estimate true-expectation))) estimates)]
-             [mean-abs-error (mean errors)])
-        (if (> mean-abs-error tolerance)
-            (for-each display (list ".. failed! true expectation: "  true-expectation ", test mean: " (* (mean estimates) 1.) "\n"))
-            (for-each display (list ".. passed. true expectation: "  true-expectation ", test mean: " (* (mean estimates) 1.) "\n"))))))
-
-
 ;; ;;;sanity check, flip-proposer should never be called since the with-proposer proc is not used in a mh-query
 ;; (define (flip-proposer value)
 ;;   (let ([db (pretty-print "if you see this there is an error in random,no query test")])
