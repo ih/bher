@@ -100,7 +100,8 @@
   (let ((proposal-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc)))) ;;don't care about bw/fw for init.
     (if (= -inf.0 (mcmc-state->score proposal-state))
         (rejection-initializer normal-form-proc)
-        proposal-state)))
+        (let ();[db (pretty-print "initial state chosen")])
+        proposal-state))))
 
 ;; used when with-proposer is used (specifically by smc-core) to get random choices for a proposed value
 (define (rejection-addressed-initializer normal-form-proc start-address)
@@ -212,7 +213,7 @@
   (repeat-kernel steps (make-mh-kernel (lambda (state) (basic-proposal-distribution state nfqp))
                                        mcmc-state->score)))
 
-(define inference-timing #f)
+(define inference-timing #t)
 
 ;;;queries
 (define (repeated-mcmc-query-core initializer kernel num-samples)
@@ -335,11 +336,14 @@
                 ;;remove duplicates in order to do selective model averaging:
                 (samples (fold (lambda (s a) (if (member (mcmc-state->addrval s) (map mcmc-state->addrval a)) a (pair s a))) '() samples))
                 (scores (map mcmc-state->score samples))
+                ;;[db (pretty-print (list "individual scores" gen-code (lazy-list->all-list (first args)) (map exp scores)))]
                 (score (if (null? scores)
                            -inf.0
-                           (apply log-sum-exp scores))))
+                           (apply log-sum-exp scores)))) 
+                           ;;(- (apply log-sum-exp scores) (log (length scores))))))
+           
            score)
-                                        ;(begin (display score)(display "\n") score))
+           ;;(begin (display (exp score))(display "\n") score))
          (log 0.9)) ;;FIXME!! proper scoring for being false?
      ))))
 

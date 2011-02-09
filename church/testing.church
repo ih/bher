@@ -1,3 +1,11 @@
+(define (equal?-test name test-val true-val)
+  (begin
+    (display "deterministic test: ")(display name)
+    (if (not (equal? test-val true-val))
+        (for-each display (list ".. failed! true value: "  true-val ", test value: " test-val "\n"))
+        (display ".. passed.\n"))))
+
+
 (define (with-proposer-test distribution with-proposer-distribution expectation-fn true-expectation tolerance name)
   (begin
     (pretty-print name)
@@ -13,5 +21,5 @@
            [mean-abs-error (mean errors)])
       (if (> mean-abs-error tolerance)
           (for-each display (list ".. failed! true expectation: "  true-expectation ", test mean: " (* (mean estimates) 1.) "\n"))
-          (for-each display (list ".. passed. true expectation: "  true-expectation ", test mean: " (* (mean estimates) 1.) "\n"))))))
+          (for-each display (list name " passed. true expectation: "  true-expectation ", test mean: " (* (mean estimates) 1.) "\n"))))))
 

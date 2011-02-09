@@ -1,5 +1,0 @@
-;;(lazy-list->all-list (gen-tree))
-(define ps (repeat 10 (lambda () (lazy-list->all-list (gen-tree)))))
-(pretty-print ps)
-(map eval ps)
-(map (lambda (x) (apply x '())) (map eval ps))

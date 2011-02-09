@@ -1,10 +1,4 @@
 
-(define (equal?-test name test-val true-val)
-  (begin
-    (display "deterministic test: ")(display name)
-    (if (not (equal? test-val true-val))
-        (for-each display (list ".. failed! true value: "  true-val ", test value: " test-val "\n"))
-        (display ".. passed.\n"))))
 
 (define samples 150)
 (define lag 20)

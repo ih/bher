@@ -1,0 +1,51 @@
+;;(import (srfi :78))
+;;the following assume noise is 0
+(equal?-test "single node" (lazy-list->all-list (eval '(node 'a))) '(a))
+
+(define (partial-tests name depth node-version list-version)
+  (if (= depth 0)
+      (equal?-test name (lazy-list->list (eval node-version) depth) (lazy-list->list list-version depth))
+      (begin 
+        (equal?-test name (lazy-list->list (eval node-version) depth) (lazy-list->list list-version depth))
+        (partial-tests name (- depth 1) node-version list-version))))
+
+;;;line test
+(define node-line '(node 'a (node 'b (node 'c))))
+(define list-line (lazy-list a (lazy-list b (lazy-list c))))
+(equal?-test "node list test" (lazy-list->all-list (eval node-line)) (lazy-list->all-list list-line))
+(partial-tests "partial node line test" (compute-depth list-line) node-line list-line)
+
+;;;branching line test
+(define node-branching-line '(node 'a (node 'b (node 'c) (node 'd))))
+(define list-branching-line (lazy-list a (lazy-list b (lazy-list c) (lazy-list d))))
+(partial-tests "partial node branching line test" (compute-depth list-branching-line) node-branching-line list-branching-line)
+
+;;;node w/ '() nodes
+(equal?-test "'() node" (lazy-list->all-list (eval '(node '()))) (list '()))
+
+
+
+;;;node with noise tests
+(define runs 5)
+(define samples 100)
+(define error-tolerance .07)
+;;;label noise
+;;noisy-label test
+(check-test (repeat runs (lambda ()
+                           (repeat samples (lambda () (noisy-label 'a)))))
+            (lambda (x) (if (equal? x 'a) 1 0))
+            (- 1 label-noise)
+            error-tolerance
+            "single node noisy-label")
+
+
+;;single node
+(check-test (repeat runs (lambda ()
+                           (repeat samples (lambda () (eval '(node 'a))))))
+            (lambda (x) (if (equal? (lazy-list->all-list x) '(a)) 1 0))
+            (- 1 label-noise)
+            error-tolerance
+            "single node noisy-label")
+
+;;(repeat 50 (lambda () (noisy-label 'a)))
+;;(repeat 50 (lambda () (lazy-list->all-list (eval '(node 'a (node 'b (node 'a) (node 'b)))))))
