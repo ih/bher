@@ -24,7 +24,7 @@
          )
 
  (define *storethreading* false)
- (define *lazy* false)
+ (define *lazy* true)
 
  (define (prefix-church symb) (string->symbol (string-append "church-" (symbol->string symb))))
  (define (church-symbol? symb) (and (< 7 (length (string->list (symbol->string symb))))
@@ -303,6 +303,7 @@
                          (value (first tmp))
                          (new-stats (list (second tmp) (store->tick store)))
                          (incr-score (third tmp)) ;;FIXME: need to catch measure zero xrp situation?
+                         [db (if (equal? xrp-name 'marginalized-eq-obs-gen-sexpr) (pretty-print (list xrp-name " adding " incr-score " to the total score.")) '())]
                          (new-xrp-draw (make-xrp-draw address
                                                       value
                                                       xrp-name
@@ -409,10 +410,21 @@
                 ;;application of the nfqp happens with interv-store, which is a fresh pair, so won't mutate original state.
                 ;;after application the store must be captured and put into the mcmc-state.
                 ;;[db (pretty-print "running the nfqp")]
+                [db (if (equal? (second state) 'init-val)
+                        '()
+                        (if (or (equal? (mcmc-state->query-value state) 0) (equal? (mcmc-state->query-value state) 1))
+                            (pretty-print (list "inside cf-update...mcmc-state score before:" (mcmc-state->score state) " interv score" (store->score interv-store)))
+                            '()))]
                 (ret ,(if *storethreading*
                           '(church-apply (mcmc-state->address state) interv-store nfqp '()) ;;return is already list of value + store.
                           '(list (church-apply (mcmc-state->address state) interv-store nfqp '()) interv-store) ;;capture store, which may have been mutated.
                           ))
+                [db (if (equal? (second state) 'init-val)
+                        '()
+                        (if (or (equal? (mcmc-state->query-value state) 0) (equal? (mcmc-state->query-value state) 1))
+                            (pretty-print (list "inside cf-update...mcmc-state score after:" (mcmc-state->score state) " interv score" (store->score interv-store)))
+                            '()))]
+                
                 ;;[db (pretty-print "nfqp complete")]
                 ;;(db (pretty-print (list "interv-store after update" (store->tick (mcmc-state->store state)) interv-store)))
 ;;                (db (repl ret))

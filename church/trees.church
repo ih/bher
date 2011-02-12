@@ -18,10 +18,15 @@
 ;;           (lazy-pair (noisy-label item0) (apply node items)))
 ;;       '()))
 
-(define (node item0 . items)
-  (if (null? items)
-      (lazy-pair (noisy-label item0) '())
-      (lazy-pair (noisy-label item0) (apply node items))))
+(define node
+  (lazify 
+  (lambda (item0 . items)
+  (if (flip (- 1 growth-noise))
+      (if (null? items)
+          (lazy-pair (noisy-label item0) '())
+          (lazy-pair (noisy-label item0) (apply node items)))
+      '()))))
+  
   
 
 
@@ -30,14 +35,16 @@
 ;;       (apply lazy-list (delete '() (pair (noisy-label x) subtrees)))
 ;;       '()))
 
-(define (noisy-label x)
+(define noisy-label
+  (lazify
+   (lambda (x)
   (if (symbol? x)
       (if (flip (- 1 label-noise))
           x
           (if (equal? x 'a)
               'b
               'a))
-      x))
+      x))))
 
 
 ;;;tree grammar
@@ -57,8 +64,9 @@
         [else '()]))
 
 (define gen-tree
+  (lazify
    (lambda ()
      (let ([color (uniform-draw '(a b))])
-       (lazy-list 'node color))))
+       (lazy-list 'node color)))))
 
 ;;(eval (lazy-list->all-list (gen-program)))

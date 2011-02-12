@@ -1,17 +1,24 @@
-(define samples 1000)
+(define samples 100)
 (define lag 2)
-(define runs 2)
+(define runs 1)
 (define error-tolerance 0.07)
 (define tree (lazy-list->all-list (gen-tree)))
-(pretty-print tree)
+;;(pretty-print tree)
 (equal? tree '(node a))
+
+;; (mh-query samples lag
+;;           (define a (flip))
+;;           (define b (flip))
+;;           (define x (or a b))
+;;           (if (equal? x #t) 1 0)
+;;           (equal? x #t))
 
 (check-test (repeat runs
                     (lambda ()
                       (mh-query samples lag
-                                ;;(define tree (lazy-list->all-list (gen-tree)))
-                                (define tree '(node a))
-                                (define obs (smc-eval-obs-marginalize tree 10))
+                                (define tree (lazy-list->all-list (gen-tree)))
+                                ;;(define tree '(node a))
+                                (define obs (smc-eval-obs-marginalize tree 20))
                                 (if (equal? tree '(node a)) 1 0)
                                 (obs (lazy-list 'a)))))
             (lambda (b) b)

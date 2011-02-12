@@ -1,5 +1,4 @@
-;;(import (srfi :78))
-;;the following assume noise is 0
+;; ;;the following assume noise is 0
 (equal?-test "single node" (lazy-list->all-list (eval '(node 'a))) '(a))
 
 (define (partial-tests name depth node-version list-version)
@@ -36,7 +35,7 @@
             (lambda (x) (if (equal? x 'a) 1 0))
             (- 1 label-noise)
             error-tolerance
-            "single node noisy-label")
+            "noisy-label test")
 
 
 ;;single node
@@ -46,6 +45,13 @@
             (- 1 label-noise)
             error-tolerance
             "single node noisy-label")
+;;line
+(check-test (repeat runs (lambda ()
+                           (repeat samples (lambda () (eval node-line)))))
+            (lambda (x) (if (equal? (lazy-list->all-list x) (lazy-list->all-list list-line)) 1 0))
+            (expt (- 1 label-noise) (depth (lazy-list->all-list list-line)))
+            error-tolerance
+            "line noisy-label")
 
-;;(repeat 50 (lambda () (noisy-label 'a)))
+;; ;;(repeat 50 (lambda () (noisy-label 'a)))
 ;;(repeat 50 (lambda () (lazy-list->all-list (eval '(node 'a (node 'b (node 'a) (node 'b)))))))

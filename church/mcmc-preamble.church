@@ -88,9 +88,12 @@
          [proposal-bw-score (third ret1)]
          [ret2 (apply counterfactual-update (append (list state nfqp) (list (pair chosen proposed-val))))]
          [proposal-state (first ret2)]
+         
          [cd-bw/fw (second ret2)]
          [ind-fw (- (log (addbox-size (mcmc-state->xrp-draws state))))]
-         [ind-bw (- (log (addbox-size (mcmc-state->xrp-draws proposal-state))))])
+         [ind-bw (- (log (addbox-size (mcmc-state->xrp-draws proposal-state))))]
+         [db (if (or (= (mcmc-state->query-value proposal-state) 0) (= (mcmc-state->query-value proposal-state) 1)) (pretty-print (list "inside basic-proposal distribution " "proposal-fw-score " proposal-fw-score " proposal-bw-score " proposal-bw-score " cd-bw/fw " cd-bw/fw " ind-fw " ind-fw " ind-bw " ind-bw)) '())]
+         )
     (list (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) proposal-state)))
 
 (define (trivial-proposal state) (list 0.0 state))
@@ -183,6 +186,7 @@
            (old-p (scorer state))
            (new-p (scorer proposal-state))
            (accept (log-flip (min 0.0 (+ (- new-p old-p) bw/fw))))
+           [db (pretty-print (list "old state:" (mcmc-state->query-value state) old-p "proposed state:" (mcmc-state->query-value proposal-state) new-p "log bw/fw:" bw/fw ))]
            ;(dummy (if accept (display "--accept--\n") (display "--reject--\n")))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
       (if accept
@@ -320,17 +324,17 @@
 
 
 ;;this version takes in a program to generate sexprs (as a sexpr) and compiles it before marginalizing.
-(define (smc-eval-obs-marginalize gen-code popsize)
-  (let* (;;[db (pretty-print (list "gen-code" gen-code))]
-         (gen-sexpr (eval gen-code)))
+(define (smc-eval-obs-marginalize gen-sexpr popsize)
+  (let* ();;[db (pretty-print (list "gen-code" gen-code))]
+         ;;(gen-sexpr (eval gen-code)))
          ;;[db (pretty-print (list "gen-sexrp" gen-sexpr))])
   (make-stateless-xrp
    'marginalized-eq-obs-gen-sexpr
-   (lambda (obs) (lazy-equal? (gen-sexpr) obs)) ;;sampler
+   (lambda (obs) (lazy-equal? (eval gen-sexpr) obs)) ;;sampler
    (lambda (args val) ;;scorer
      (if val
          (let* ((samples (smc-core (map list (iota (+ 1 (lazy-list-size (first args))))) popsize 0
-                                   (lambda (depth) (lambda () (let ((s (gen-sexpr)))
+                                   (lambda (depth) (lambda () (let ((s (eval gen-sexpr)))
                                                                 (pair (lazy-equal? s (first args) depth)
                                                                       (lambda () (first (lazy-list->list s depth)))))))))
                 ;;remove duplicates in order to do selective model averaging:
@@ -339,7 +343,9 @@
                 ;;[db (pretty-print (list "individual scores" gen-code (lazy-list->all-list (first args)) (map exp scores)))]
                 (score (if (null? scores)
                            -inf.0
-                           (apply log-sum-exp scores)))) 
+                           (apply log-sum-exp scores)))
+                [db (pretty-print (list "smc-eval-obs-marginal score" score))]
+                ) 
                            ;;(- (apply log-sum-exp scores) (log (length scores))))))
            
            score)
