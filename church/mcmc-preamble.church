@@ -191,6 +191,7 @@
            (old-p (scorer state))
            (new-p (scorer proposal-state))
            (accept (log-flip (min 0.0 (+ (- new-p old-p) bw/fw))))
+           (send-to-stdout (if accept (pretty-print (list (mcmc-state->query-value proposal-state) (current-date))) '())) ;; pipe this to a file when running so you can collect data even if you have to cancel before finishing
            ;;[db (pretty-print (list "old state:" (mcmc-state->query-value state) old-p "proposed state:" (mcmc-state->query-value proposal-state) new-p "log bw/fw:" bw/fw ))]
            ;(dummy (if accept (display "--accept--\n") (display "--reject--\n")))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
@@ -333,36 +334,26 @@
 
 ;;this version takes in a program to generate sexprs (as a sexpr) and compiles it before marginalizing.
 (define (smc-eval-obs-marginalize gen-sexpr popsize)
-  (let* ();;[db (pretty-print (list "gen-code" gen-code))]
-         ;;(gen-sexpr (eval gen-code)))
-         ;;[db (pretty-print (list "gen-sexrp" gen-sexpr))])
   (make-stateless-xrp
    'marginalized-eq-obs-gen-sexpr
    (lambda (obs) (lazy-equal? (eval gen-sexpr) obs)) ;;sampler
    (lambda (args val) ;;scorer
      (if val
-         (let* (;;(db (pretty-print "inside smc-eval scorer"))
-                (samples (smc-core (map list (iota (+ 1 (lazy-list-size (first args))))) popsize 0
+         (let* ((samples (smc-core (map list (iota (+ 1 (lazy-list-size (first args))))) popsize 0
                                    (lambda (depth) (lambda () (let ((s (eval gen-sexpr)))
                                                                 (pair (lazy-equal? s (first args) depth)
                                                                       (lambda () (first (lazy-list->list s depth)))))))))
                 ;;remove duplicates in order to do selective model averaging:
                 (samples (fold (lambda (s a) (if (member (mcmc-state->addrval s) (map mcmc-state->addrval a)) a (pair s a))) '() samples))
                 (scores (map mcmc-state->score samples))
-                ;;[db (pretty-print (list "individual scores" gen-code (lazy-list->all-list (first args)) (map exp scores)))]
                 (score (if (null? scores)
                            -inf.0
-                ;;           (apply log-sum-exp scores)))
-                ;;[db (pretty-print (list "exiting smc-eval-obs-marginal score" score))]
-                           (- (apply log-sum-exp scores) (log (length scores)))))
-                )
-                 
-                
-           ;;0.0
+                           ;;           (apply log-sum-exp scores)))
+                           (- (apply log-sum-exp scores) (log (length scores))))))
            score)
-           ;;(begin (display (exp score))(display "\n") score))
-         (log 0.9)) ;;FIXME!! proper scoring for being false?
-     ))))
+         ;;(begin (display (exp score))(display "\n") score))
+         -inf.0)))) ;;-inf.0 b/c this xrp is used as the conditioning statement so if val is false the state will be rejected anyway
+
 
 
 

@@ -6,22 +6,15 @@
 ;;(pretty-print tree)
 (equal? tree '(node a))
 
-;; (mh-query samples lag
-;;           (define a (flip))
-;;           (define b (flip))
-;;           (define x (or a b))
-;;           (if (equal? x #t) 1 0)
-;;           (equal? x #t))
-
 (check-test (repeat runs
                     (lambda ()
                       (mh-query samples lag
                                 (define tree (lazy-list->all-list (gen-tree)))
-                                ;;(define tree '(node a))
                                 (define obs (smc-eval-obs-marginalize tree 5))
                                 (if (equal? tree '(node a)) 1 0)
                                 (obs (lazy-list 'a)))))
             (lambda (b) b)
-            (/ 8 10)
+            .976
             error-tolerance
             "scoring a single node")
+
