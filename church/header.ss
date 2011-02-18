@@ -112,7 +112,9 @@
 
 ;;;
      ;;stuff for xrps (and dealing with stores):
-     (define (make-store xrp-draws xrp-stats score tick enumeration-flag with-proposer-calls) (list xrp-draws xrp-stats score tick enumeration-flag with-proposer-calls))
+     (define (make-store xrp-draws xrp-stats score tick enumeration-flag with-proposer-calls)
+       (let ();[db (pretty-print (list "new score is " score))])
+         (list xrp-draws xrp-stats score tick enumeration-flag with-proposer-calls)))
      (define (make-empty-store) (make-store (make-addbox) (make-addbox) 0.0 0 #f (make-addbox)))
      (define store->xrp-draws first)
      (define store->xrp-stats second)
@@ -249,13 +251,16 @@
               (init-stats (church-force address store init-stats))
               (hyperparams (church-force address store hyperparams))
               (proposer (church-force address store proposer))
-              (support (church-force address store support)))
+              (support (church-force address store support))
+              ;;(db (pretty-print (list "creation of the xrp" xrp-name)))
+              )
          (return-with-store
         store
         (let* ((ret (pull-outof-addbox (store->xrp-stats store) address))
                (oldstats (car ret))
                (reststatsbox (cdr ret))
                (tick (store->tick store)))
+               ;;[db (pretty-print (list "before resetting of states" store xrp-name oldstats reststatsbox))])
           (if (and (not (eq? #f oldstats)) (= tick (second oldstats))) ;;reset stats only if this is first touch on this tick.
               store
               (make-store (store->xrp-draws store)
@@ -265,6 +270,7 @@
                           (store->enumeration-flag store)
                           (store->with-proposer-calls store))))
         (let* ((xrp-address address)
+               ;;[db (pretty-print (list "init-stats initialized?" store xrp-name))]
                (proposer (if (null? proposer)
                              (lambda (address store operands old-value) ;;--> proposed-value forward-log-prob backward-log-prob
                                (let* ((dec (decr-stats address store old-value (caar (pull-outof-addbox (store->xrp-stats store) xrp-address)) hyperparams operands))
@@ -284,7 +290,7 @@
               ;;if this xrp-draw has been touched on this tick, as in mem, don't change score or stats.
               (if (equal? (store->tick store) old-tick)
                   (let ();;[db (pretty-print (list "xrp unchanged so tick is old-tick" (xrp-draw-score old-xrp-draw)))])
-                  (return-with-store store store (xrp-draw-value old-xrp-draw)))
+                  (return-with-store store store (xrp-draw-value old-xrp-draw))) ;;WHY IS THIS WRITTEN THIS WAY?
                   (let* ((tmp (pull-outof-addbox (store->xrp-stats store) xrp-address))
                          (stats (caar tmp))
                          (rest-statsbox (cdr tmp))
@@ -297,13 +303,13 @@
                          ;;            (list (first incret) (second incret) (- (third incret) (third decret))))))
                          (tmp (if (eq? #f old-xrp-draw)
                                   (if (store->enumeration-flag store) ;;hack to init new draws to first element of support...
-                                      (incr-stats address store (first support-vals) stats hyperparams args)
-                                      (sample address store stats hyperparams args)) ;;FIXME: returned store?
-                                  (incr-stats address store (xrp-draw-value old-xrp-draw) stats hyperparams args)))
+                                      (incr-stats address (cons (first store) (cdr store)) (first support-vals) stats hyperparams args)
+                                      (sample address (cons (first store) (cdr store)) stats hyperparams args)) ;;FIXME: returned store?
+                                  (incr-stats address (cons (first store) (cdr store)) (xrp-draw-value old-xrp-draw) stats hyperparams args)))
                          (value (first tmp))
                          (new-stats (list (second tmp) (store->tick store)))
                          (incr-score (third tmp)) ;;FIXME: need to catch measure zero xrp situation?
-                         [db (if (equal? xrp-name 'marginalized-eq-obs-gen-sexpr) (pretty-print (list xrp-name " adding " incr-score " to the total score.")) '())]
+                         ;;[db (if (equal? xrp-name 'marginalized-eq-obs-gen-sexpr) (pretty-print (list xrp-name " adding " incr-score " to the total score.")) '())]
                          (new-xrp-draw (make-xrp-draw address
                                                       value
                                                       xrp-name
@@ -358,15 +364,28 @@
                                         ;                        " xrp-stats: " (length (store->xrp-stats store)) "\n"))
          ,(if *storethreading*
               '(list (make-mcmc-state store 'init-val address) store)
-              '(make-mcmc-state (cons (first store) (cdr store)) 'init-val address)))
-
+              ;;'(make-mcmc-state (cons (first store) (cdr store)) 'init-val address)))
+              '(make-mcmc-state (make-store (make-addbox)
+                                            (store->xrp-stats store)
+                                            0.0
+                                            0
+                                            (store->enumeration-flag store)
+                                            (make-addbox))
+                                'init-val address)))
 
        (define (church-make-addressed-initial-mcmc-state address store start-address)
                                         ;(for-each display (list "capturing store, xrp-draws has length :" (length (store->xrp-draws store))
                                         ;                        " xrp-stats: " (length (store->xrp-stats store)) "\n"))
          ,(if *storethreading*
               '(list (make-mcmc-state store 'init-val start-address) store)
-              '(make-mcmc-state (cons (first store) (cdr store)) 'init-val start-address)))
+              ;;'(make-mcmc-state (cons (first store) (cdr store)) 'init-val start-address)))
+              '(make-mcmc-state (make-store (store->xrp-draws store)
+                                            (store->xrp-stats store)
+                                            0.0
+                                            (store->tick store)
+                                            (store->enumeration-flag store)
+                                            (store->with-proposer-calls store))
+                                'init-val start-address)))
        
        ;;this is like church-make-initial-mcmc-state, obut flags the created state to init new xrp-draws at left-most element of support.
        ;;clears the xrp-draws since it is meant to happen when we begin enumeration (so none of the xrp-draws in store can be relevant).
@@ -397,6 +416,7 @@
        (define (counterfactual-update state nfqp . interventions)
          (let* ((new-tick (+ 1 (store->tick (mcmc-state->store state))))
                 ;;(db (if (> (length interventions) 1) (pretty-print (list "interventions size" (length interventions) "uncompressed-state xrp-draw number" (length (store->xrp-draws (mcmc-state->store state)))))))
+                ;;[db (pretty-print (list "in the cfupdate" (store->xrp-stats (mcmc-state->store state))))]
                 (interv-store (make-store (fold add-interventions
                                                 (store->xrp-draws (mcmc-state->store state))
                                                 interventions)
@@ -409,21 +429,21 @@
                ;; (db (pretty-print (list "interv-store"  interv-store)))
                 ;;application of the nfqp happens with interv-store, which is a fresh pair, so won't mutate original state.
                 ;;after application the store must be captured and put into the mcmc-state.
-                ;;[db (pretty-print "running the nfqp")]
-                [db (if (equal? (second state) 'init-val)
-                        '()
-                        (if (or (equal? (mcmc-state->query-value state) 0) (equal? (mcmc-state->query-value state) 1))
-                            (pretty-print (list "inside cf-update...mcmc-state score before:" (mcmc-state->score state) " interv score" (store->score interv-store)))
-                            '()))]
+                ;;[db (pretty-print (list "running the nfqp" interv-store))]
+                ;; [db (if (equal? (second state) 'init-val)
+                ;;         '()
+                ;;         (if (or (equal? (mcmc-state->query-value state) 0) (equal? (mcmc-state->query-value state) 1))
+                ;;             (pretty-print (list "inside cf-update...global mcmc-state score before:" (mcmc-state->score state) " interv score" (store->score interv-store)))
+                ;;             (pretty-print (list "inside cf-update...local mcmc-state score before:" (mcmc-state->score state) " interv score" (store->score interv-store)))))]
                 (ret ,(if *storethreading*
                           '(church-apply (mcmc-state->address state) interv-store nfqp '()) ;;return is already list of value + store.
                           '(list (church-apply (mcmc-state->address state) interv-store nfqp '()) interv-store) ;;capture store, which may have been mutated.
                           ))
-                [db (if (equal? (second state) 'init-val)
-                        '()
-                        (if (or (equal? (mcmc-state->query-value state) 0) (equal? (mcmc-state->query-value state) 1))
-                            (pretty-print (list "inside cf-update...mcmc-state score after:" (mcmc-state->score state) " interv score" (store->score interv-store)))
-                            '()))]
+                ;; [db (if (equal? (second state) 'init-val)
+                ;;         '()
+                ;;         (if (or (equal? (mcmc-state->query-value state) 0) (equal? (mcmc-state->query-value state) 1))
+                ;;             (pretty-print (list "inside cf-update...mcmc-state score after:" (mcmc-state->score state) " interv score" (store->score interv-store)))
+                ;;             (pretty-print (list "inside cf-update...local mcmc-state score before:" (mcmc-state->score state) " interv score" (store->score interv-store)))))]
                 
                 ;;[db (pretty-print "nfqp complete")]
                 ;;(db (pretty-print (list "interv-store after update" (store->tick (mcmc-state->store state)) interv-store)))
@@ -436,7 +456,9 @@
                 (ret2 (if (store->enumeration-flag new-store)
                           (list new-store 0)
                           (clean-store new-store))) ;;FIXME!! need to clean out unused xrp-stats?
+
                 (new-store (first ret2))
+                ;;(db (pretty-print (list "store cleaned" new-store)))
                 (cd-bw/fw (second ret2))
                 (proposal-state (make-mcmc-state new-store value (mcmc-state->address state))))
            (list proposal-state cd-bw/fw)))

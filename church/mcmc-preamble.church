@@ -92,7 +92,8 @@
          [cd-bw/fw (second ret2)]
          [ind-fw (- (log (addbox-size (mcmc-state->xrp-draws state))))]
          [ind-bw (- (log (addbox-size (mcmc-state->xrp-draws proposal-state))))]
-         [db (if (or (= (mcmc-state->query-value proposal-state) 0) (= (mcmc-state->query-value proposal-state) 1)) (pretty-print (list "inside basic-proposal distribution " "proposal-fw-score " proposal-fw-score " proposal-bw-score " proposal-bw-score " cd-bw/fw " cd-bw/fw " ind-fw " ind-fw " ind-bw " ind-bw)) '())]
+         ;;[db (if (or (= (mcmc-state->query-value proposal-state) 0) (= (mcmc-state->query-value proposal-state) 1)) (pretty-print (list "inside basic-proposal distribution " "old store score" (mcmc-state->score state) "proposal store score" (mcmc-state->score proposal-state))) '())]
+         ;;[db (if (or (= (mcmc-state->query-value proposal-state) 0) (= (mcmc-state->query-value proposal-state) 1)) (pretty-print (list "inside basic-proposal distribution " "proposal-fw-score " proposal-fw-score " proposal-bw-score " proposal-bw-score " cd-bw/fw " cd-bw/fw " ind-fw " ind-fw " ind-bw " ind-bw)) '())]
          )
     (list (+ (- proposal-bw-score proposal-fw-score) cd-bw/fw (- ind-bw ind-fw)) proposal-state)))
 
@@ -100,11 +101,15 @@
 
 ;;FIXME!! this works badly... need constraint prop to do this right.
 (define (rejection-initializer normal-form-proc)
-  (let ((proposal-state (first (counterfactual-update (make-initial-mcmc-state) normal-form-proc)))) ;;don't care about bw/fw for init.
+  (let* ([init-state (make-initial-mcmc-state)]
+         ;;[db (pretty-print (list "rejection initializer init-state" (store->score (mcmc-state->store init-state))))]
+         (proposal-state (first (counterfactual-update init-state normal-form-proc)))
+         [db (if (or (equal? (mcmc-state->query-value proposal-state) 0) (equal? (mcmc-state->query-value proposal-state) 1)) (pretty-print (list "rejection initializer proposal global state score" (mcmc-state->score proposal-state))) '())] ;(pretty-print (list "rejection initializer proposal local state score" (mcmc-state->score proposal-state))))]
+         ) ;;don't care about bw/fw for init.
     (if (= -inf.0 (mcmc-state->score proposal-state))
         (rejection-initializer normal-form-proc)
         (let ();[db (pretty-print "initial state chosen")])
-        proposal-state))))
+          proposal-state))))
 
 ;; used when with-proposer is used (specifically by smc-core) to get random choices for a proposed value
 (define (rejection-addressed-initializer normal-form-proc start-address)
@@ -186,7 +191,7 @@
            (old-p (scorer state))
            (new-p (scorer proposal-state))
            (accept (log-flip (min 0.0 (+ (- new-p old-p) bw/fw))))
-           [db (pretty-print (list "old state:" (mcmc-state->query-value state) old-p "proposed state:" (mcmc-state->query-value proposal-state) new-p "log bw/fw:" bw/fw ))]
+           ;;[db (pretty-print (list "old state:" (mcmc-state->query-value state) old-p "proposed state:" (mcmc-state->query-value proposal-state) new-p "log bw/fw:" bw/fw ))]
            ;(dummy (if accept (display "--accept--\n") (display "--reject--\n")))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
       (if accept
@@ -222,7 +227,8 @@
 ;;;queries
 (define (repeated-mcmc-query-core initializer kernel num-samples)
   (let* ([init-state (reset-with-proposer-calls (initializer))]
-        [db (pretty-print (list "init state" (mcmc-state->query-value init-state) (length (mcmc-state->with-proposer-calls init-state))))])
+        ;;[db (pretty-print (list "init state" (mcmc-state->query-value init-state) (mcmc-state->score init-state) (length (mcmc-state->with-proposer-calls init-state))))]
+         )
     (when inference-timing
           (display "initialized: ")
           (display (current-date))
@@ -275,10 +281,12 @@
                                                            (reset-with-proposer-calls (rejection-addressed-initializer (apply temps->nfqp (first temps)) (first start-address))))
 
                                                        ))))
+              
               (weights (make-list popsize 0)))
 
       (let* (;;(dummy (display (map mcmc-state->query-value population))) (dummy (display "\n"))
              ;;step forward temps.
+             ;;[db (pretty-print (list "smc population scores at temp" (first temps) (map mcmc-state->score population)))] 
              (rets (map (lambda (state) (counterfactual-update state (apply temps->nfqp (first temps)))) population))
              (new-population (map first rets))
              (cd-bw/fw (map second rets))
@@ -296,7 +304,7 @@
         (if collapse?
             (let ();;[db (pretty-print (list "collapse!!!" popsize))])
               (if (null? start-address)
-                  (smc-core original-temps (increase-population popsize) lag temps->nfqp)
+                  '();(smc-core original-temps (increase-population popsize) lag temps->nfqp)
                   (smc-core original-temps (increase-population popsize) lag temps->nfqp (first start-address))))
             (let* ([new2-population
                     (repeat popsize (lambda ()
@@ -333,7 +341,8 @@
    (lambda (obs) (lazy-equal? (eval gen-sexpr) obs)) ;;sampler
    (lambda (args val) ;;scorer
      (if val
-         (let* ((samples (smc-core (map list (iota (+ 1 (lazy-list-size (first args))))) popsize 0
+         (let* (;;(db (pretty-print "inside smc-eval scorer"))
+                (samples (smc-core (map list (iota (+ 1 (lazy-list-size (first args))))) popsize 0
                                    (lambda (depth) (lambda () (let ((s (eval gen-sexpr)))
                                                                 (pair (lazy-equal? s (first args) depth)
                                                                       (lambda () (first (lazy-list->list s depth)))))))))
@@ -343,11 +352,13 @@
                 ;;[db (pretty-print (list "individual scores" gen-code (lazy-list->all-list (first args)) (map exp scores)))]
                 (score (if (null? scores)
                            -inf.0
-                           (apply log-sum-exp scores)))
-                [db (pretty-print (list "smc-eval-obs-marginal score" score))]
-                ) 
-                           ;;(- (apply log-sum-exp scores) (log (length scores))))))
-           
+                ;;           (apply log-sum-exp scores)))
+                ;;[db (pretty-print (list "exiting smc-eval-obs-marginal score" score))]
+                           (- (apply log-sum-exp scores) (log (length scores)))))
+                )
+                 
+                
+           ;;0.0
            score)
            ;;(begin (display (exp score))(display "\n") score))
          (log 0.9)) ;;FIXME!! proper scoring for being false?

@@ -1,4 +1,4 @@
-(define samples 100)
+(define samples 300)
 (define lag 2)
 (define runs 1)
 (define error-tolerance 0.07)
@@ -18,7 +18,7 @@
                       (mh-query samples lag
                                 (define tree (lazy-list->all-list (gen-tree)))
                                 ;;(define tree '(node a))
-                                (define obs (smc-eval-obs-marginalize tree 20))
+                                (define obs (smc-eval-obs-marginalize tree 10))
                                 (if (equal? tree '(node a)) 1 0)
                                 (obs (lazy-list 'a)))))
             (lambda (b) b)
