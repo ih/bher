@@ -6,7 +6,7 @@
 (define e 'e)
 
 (define growth-noise 0)
-(define label-noise .2)
+(define label-noise .3)
 (define labels '(a b))
 
 (define root '(a))
@@ -63,10 +63,17 @@
          (sample gen-tree)]
         [else '()]))
 
+;; (define gen-tree
+;;   (lazify
+;;    (lambda ()
+;;      (let ([color (uniform-draw '(a b))])
+;;        (lazy-list 'node color)))))
+
 (define gen-tree
   (lazify
    (lambda ()
-     (let ([color (uniform-draw '(a b))])
-       (lazy-list 'node color)))))
+     (if (flip .4) (list (lambda () (node 'a)) 1) (list (lambda () (node 'b)) 0)))))
+
+
 
 ;;(eval (lazy-list->all-list (gen-program)))

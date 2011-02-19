@@ -191,7 +191,7 @@
            (old-p (scorer state))
            (new-p (scorer proposal-state))
            (accept (log-flip (min 0.0 (+ (- new-p old-p) bw/fw))))
-           (send-to-stdout (if accept (pretty-print (list (mcmc-state->query-value proposal-state) (current-date))) '())) ;; pipe this to a file when running so you can collect data even if you have to cancel before finishing
+           ;;(send-to-stdout (if accept (pretty-print (list (mcmc-state->query-value proposal-state) (current-date))) '())) ;; pipe this to a file when running so you can collect data even if you have to cancel before finishing
            ;;[db (pretty-print (list "old state:" (mcmc-state->query-value state) old-p "proposed state:" (mcmc-state->query-value proposal-state) new-p "log bw/fw:" bw/fw ))]
            ;(dummy (if accept (display "--accept--\n") (display "--reject--\n")))
            (dummy (reset-store-xrp-draws))) ;;FIXME!! this is to avoid accumulating xrp-draws...
@@ -336,11 +336,11 @@
 (define (smc-eval-obs-marginalize gen-sexpr popsize)
   (make-stateless-xrp
    'marginalized-eq-obs-gen-sexpr
-   (lambda (obs) (lazy-equal? (eval gen-sexpr) obs)) ;;sampler
+   (lambda (obs) (lazy-equal? (gen-sexpr) obs)) ;;sampler
    (lambda (args val) ;;scorer
      (if val
          (let* ((samples (smc-core (map list (iota (+ 1 (lazy-list-size (first args))))) popsize 0
-                                   (lambda (depth) (lambda () (let ((s (eval gen-sexpr)))
+                                   (lambda (depth) (lambda () (let ((s (gen-sexpr)))
                                                                 (pair (lazy-equal? s (first args) depth)
                                                                       (lambda () (first (lazy-list->list s depth)))))))))
                 ;;remove duplicates in order to do selective model averaging:
