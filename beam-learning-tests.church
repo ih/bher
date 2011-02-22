@@ -1,0 +1,32 @@
+(define (prototype) (node 'a (node 'b (node 'a (node 'b) (node 'b)))))
+
+(define (two-node) (node 'a (node 'b)))
+
+(define (gen-data model amount)
+  (delete '() (repeat amount model)))
+
+
+
+
+(define prototype-data (map lazy-list->all-list (gen-data prototype 5)))
+
+;;(pretty-print prototype-data)
+
+
+
+;;;learn-model tests
+(member?-test "make-initial-sexpr evaluation" (lazy-list->all-list (eval (make-initial-sexpr (list '(a) '(a (b)))))) (list '(a) '(a (b))))
+
+(member?-test "learned-model" (lazy-list->all-list ((learn-model '((a) (a (b)))))) '((a) (a (b))))
+
+
+
+;;(map lazy-list->all-list (map eval (map tree->program (map lazy-list->all-list (gen-data prototype 5)))))
+
+
+
+
+
+
+
+

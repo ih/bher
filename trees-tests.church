@@ -1,57 +1,71 @@
 ;; ;;the following assume noise is 0
-(equal?-test "single node" (lazy-list->all-list (eval '(node 'a))) '(a))
+;; (equal?-test "single node" (lazy-list->all-list (eval '(node 'a))) '(a))
 
-(define (partial-tests name depth node-version list-version)
-  (if (= depth 0)
-      (equal?-test name (lazy-list->list (eval node-version) depth) (lazy-list->list list-version depth))
-      (begin 
-        (equal?-test name (lazy-list->list (eval node-version) depth) (lazy-list->list list-version depth))
-        (partial-tests name (- depth 1) node-version list-version))))
+;; (define (partial-tests name depth node-version list-version)
+;;   (if (= depth 0)
+;;       (equal?-test name (lazy-list->list (eval node-version) depth) (lazy-list->list list-version depth))
+;;       (begin 
+;;         (equal?-test name (lazy-list->list (eval node-version) depth) (lazy-list->list list-version depth))
+;;         (partial-tests name (- depth 1) node-version list-version))))
 
-;;;line test
+;; ;;;line test
 (define node-line '(node 'a (node 'b (node 'c))))
-(define list-line (lazy-list a (lazy-list b (lazy-list c))))
-(equal?-test "node list test" (lazy-list->all-list (eval node-line)) (lazy-list->all-list list-line))
-(partial-tests "partial node line test" (compute-depth list-line) node-line list-line)
+(define list-line (lazy-list 'a (lazy-list 'b (lazy-list 'c))))
+;; (equal?-test "node list test" (lazy-list->all-list (eval node-line)) (lazy-list->all-list list-line))
+;; (partial-tests "partial node line test" (compute-depth list-line) node-line list-line)
 
-;;;branching line test
-(define node-branching-line '(node 'a (node 'b (node 'c) (node 'd))))
-(define list-branching-line (lazy-list a (lazy-list b (lazy-list c) (lazy-list d))))
-(partial-tests "partial node branching line test" (compute-depth list-branching-line) node-branching-line list-branching-line)
+;; ;;;branching line test
+;; (define node-branching-line '(node 'a (node 'b (node 'c) (node 'd))))
+;; (define list-branching-line (lazy-list 'a (lazy-list 'b (lazy-list 'c) (lazy-list 'd))))
+;; (partial-tests "partial node branching line test" (compute-depth list-branching-line) node-branching-line list-branching-line)
 
-;;;node w/ '() nodes
-(equal?-test "'() node" (lazy-list->all-list (eval '(node '()))) (list '()))
+;; ;;;node w/ '() nodes
+;; (equal?-test "'() node" (lazy-list->all-list (eval '(node '()))) (list '()))
 
 
 
-;;;node with noise tests
+;; ;;;node with noise tests
 (define runs 5)
 (define samples 100)
 (define error-tolerance .07)
-;;;label noise
-;;noisy-label test
-(check-test (repeat runs (lambda ()
-                           (repeat samples (lambda () (noisy-label 'a)))))
-            (lambda (x) (if (equal? x 'a) 1 0))
-            (- 1 label-noise)
-            error-tolerance
-            "noisy-label test")
+;; ;;;label noise (assumes no growth noise)
+;; ;;noisy-label test
+;; (check-test (repeat runs (lambda ()
+;;                            (repeat samples (lambda () (noisy-label 'a)))))
+;;             (lambda (x) (if (equal? x 'a) 1 0))
+;;             (- 1 label-noise)
+;;             error-tolerance
+;;             "noisy-label test")
 
 
+;; ;;single node
+;; (check-test (repeat runs (lambda ()
+;;                            (repeat samples (lambda () (eval '(node 'a))))))
+;;             (lambda (x) (if (equal? (lazy-list->all-list x) '(a)) 1 0))
+;;             (- 1 label-noise)
+;;             error-tolerance
+;;             "single node noisy-label")
+;; ;;line
+;; (check-test (repeat runs (lambda ()
+;;                            (repeat samples (lambda () (eval node-line)))))
+;;             (lambda (x) (if (equal? (lazy-list->all-list x) (lazy-list->all-list list-line)) 1 0))
+;;             (expt (- 1 label-noise) (depth (lazy-list->all-list list-line)))
+;;             error-tolerance
+;;             "line noisy-label")
+;;;growth noise (assumes no label noise)
 ;;single node
 (check-test (repeat runs (lambda ()
-                           (repeat samples (lambda () (eval '(node 'a))))))
-            (lambda (x) (if (equal? (lazy-list->all-list x) '(a)) 1 0))
-            (- 1 label-noise)
+                           (repeat samples (lambda () (eval '(node 'a (node 'a)))))))
+            (lambda (x) (if (equal? (lazy-list->all-list x) '(a (a))) 1 0))
+            (- 1 growth-noise)
             error-tolerance
-            "single node noisy-label")
+            "single node growth-noise")
+
 ;;line
 (check-test (repeat runs (lambda ()
                            (repeat samples (lambda () (eval node-line)))))
             (lambda (x) (if (equal? (lazy-list->all-list x) (lazy-list->all-list list-line)) 1 0))
-            (expt (- 1 label-noise) (depth (lazy-list->all-list list-line)))
+            (expt (- 1 growth-noise) (- (depth (lazy-list->all-list list-line)) 1))
             error-tolerance
-            "line noisy-label")
+            "line growth-noise")
 
-;; ;;(repeat 50 (lambda () (noisy-label 'a)))
-;;(repeat 50 (lambda () (lazy-list->all-list (eval '(node 'a (node 'b (node 'a) (node 'b)))))))

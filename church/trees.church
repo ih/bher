@@ -1,16 +1,9 @@
 ;;;node code
-;; (define a 'a)
-;; (define b 'b)
-;; (define c 'c)
-;; (define d 'd)
-;; (define e 'e)
-
-(define growth-noise 0)
-(define label-noise .4)
+(define growth-noise .3)
+(define label-noise 0)
 (define labels '(a b))
 
 (define root '(a))
-
 
 (define node
   (lazify 
@@ -69,6 +62,9 @@
       '()
       (append (list 'node (list 'quote (first tree)))
               (map tree->program (rest tree)))))
+
+(define (tree->generative-program proc-code)
+  (list 'lambda '() (tree->program proc-code)))
      
 
 
