@@ -1,20 +1,41 @@
-(define samples 100)
+(define samples 500)
 (define lag 2)
 (define runs 5)
 (define error-tolerance 0.07)
-;;(define gen-trees (repeat 10 (lambda () (lazy-list->all-list ((first (gen-tree)))))))
-;;(pretty-print gen-trees)
+(define gen-trees (repeat 10 (lambda () (lazy-list->all-list ((first (node-test 1 0)))))))
+(pretty-print gen-trees)
 ;;(equal? tree '(node a))
+(define node-test
+  (lazify
+   (lambda (program-noise label-noise)
+     (if (flip program-noise) (list (lambda () (binary-node #t label-noise)) 1) (list (lambda () (binary-node #f label-noise)) 0)))))
 
-(check-test (repeat runs
-                    (lambda ()
-                      (mh-query samples lag
-                                (define tree (lazy-list->all-list (gen-tree)))
-                                (define obs (smc-eval-obs-marginalize (first tree) 30))
-                                (second tree)
-                                (obs (lazy-list 'a)))))
-            (lambda (b) b)
-            .6086
-            error-tolerance
-            "scoring a single node")
+(define binary-node
+  (lazify
+   (lambda (item label-noise)
+     (if (flip (- 1 label-noise))
+         (lazy-pair item '())
+         (lazy-pair (not item) '())))))
+
+(define (node-test-expectation program-noise label-noise)
+  (/ (* program-noise (- 1 label-noise)) (+ (* program-noise (- 1 label-noise)) (* label-noise (- 1 program-noise)))))
+
+(define (node-check-test program-noise label-noise particles)
+  (check-test (repeat runs
+                      (lambda ()
+                        (mh-query samples lag
+                                  (define node-gen (lazy-list->all-list (node-test program-noise label-noise)))
+                                  (define obs (smc-eval-obs-marginalize (first node-gen) particles))
+                                  (second node-gen)
+                                  (obs (lazy-list #t)))))
+              (lambda (b) b)
+              (node-test-expectation program-noise label-noise)
+              error-tolerance
+              "single binary node test"))
+
+  
+(node-check-test 1 0 10)
+(node-check-test .5 .2 10)
+(node-check-test .3 .4 10)
+(node-check-test .4 .3 10)
 

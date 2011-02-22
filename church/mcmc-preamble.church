@@ -104,7 +104,7 @@
   (let* ([init-state (make-initial-mcmc-state)]
          ;;[db (pretty-print (list "rejection initializer init-state" (store->score (mcmc-state->store init-state))))]
          (proposal-state (first (counterfactual-update init-state normal-form-proc)))
-         [db (if (or (equal? (mcmc-state->query-value proposal-state) 0) (equal? (mcmc-state->query-value proposal-state) 1)) (pretty-print (list "rejection initializer proposal global state score" (mcmc-state->score proposal-state))) '())] ;(pretty-print (list "rejection initializer proposal local state score" (mcmc-state->score proposal-state))))]
+         ;;[db (if (or (equal? (mcmc-state->query-value proposal-state) 0) (equal? (mcmc-state->query-value proposal-state) 1)) (pretty-print (list "rejection initializer proposal global state score" (mcmc-state->score proposal-state))) '())] ;(pretty-print (list "rejection initializer proposal local state score" (mcmc-state->score proposal-state))))]
          ) ;;don't care about bw/fw for init.
     (if (= -inf.0 (mcmc-state->score proposal-state))
         (rejection-initializer normal-form-proc)
@@ -223,7 +223,7 @@
   (repeat-kernel steps (make-mh-kernel (lambda (state) (basic-proposal-distribution state nfqp))
                                        mcmc-state->score)))
 
-(define inference-timing #t)
+(define inference-timing #f)
 
 ;;;queries
 (define (repeated-mcmc-query-core initializer kernel num-samples)
@@ -348,8 +348,7 @@
                 (scores (map mcmc-state->score samples))
                 (score (if (null? scores)
                            -inf.0
-                           ;;           (apply log-sum-exp scores)))
-                           (- (apply log-sum-exp scores) (log (length scores))))))
+                           (apply log-sum-exp scores))))
            score)
          ;;(begin (display (exp score))(display "\n") score))
          -inf.0)))) ;;-inf.0 b/c this xrp is used as the conditioning statement so if val is false the state will be rejected anyway

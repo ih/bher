@@ -5,29 +5,22 @@
 (define d 'd)
 (define e 'e)
 
-(define growth-noise 0)
-(define label-noise .3)
+(define growth-noise .7)
+(define label-noise .4)
 (define labels '(a b))
 
 (define root '(a))
 
-;; (define (node item0 . items)
-;;   (if (flip (- 1 growth-noise))
-;;       (if (null? items)
-;;           (lazy-pair (noisy-label item0) '())
-;;           (lazy-pair (noisy-label item0) (apply node items)))
-;;       '()))
 
 (define node
   (lazify 
-  (lambda (item0 . items)
-  (if (flip (- 1 growth-noise))
-      (if (null? items)
-          (lazy-pair (noisy-label item0) '())
-          (lazy-pair (noisy-label item0) (apply node items)))
-      '()))))
-  
-  
+   (lambda (item0 . items)
+     (if (null? items)
+         (lazy-pair (noisy-label item0) '())
+         (lazy-pair (noisy-label item0) (if (flip (- 1 growth-noise))
+                                            (apply node items)
+                                            '()))))))
+
 
 
 ;; (define (node x . subtrees)
@@ -63,17 +56,14 @@
          (sample gen-tree)]
         [else '()]))
 
-;; (define gen-tree
-;;   (lazify
-;;    (lambda ()
-;;      (let ([color (uniform-draw '(a b))])
-;;        (lazy-list 'node color)))))
-
 (define gen-tree
   (lazify
    (lambda ()
-     (if (flip .4) (list (lambda () (node 'a)) 1) (list (lambda () (node 'b)) 0)))))
+     (let ([color (uniform-draw '(a b))])
+       (lazy-list 'node color)))))
 
+
+     
 
 
 ;;(eval (lazy-list->all-list (gen-program)))

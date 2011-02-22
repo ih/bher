@@ -1,0 +1,14 @@
+(define (prototype) (node 'a (node 'b (node 'c (node 'd) (node 'd)))))
+
+(define (two-node) (node 'a (node 'b)))
+
+(define (gen-data model amount)
+  (delete '() (repeat amount model)))
+
+(map lazy-list->all-list (gen-data two-node 5))
+
+
+
+
+
+

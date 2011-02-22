@@ -20,6 +20,6 @@
            [errors (map (lambda (estimate) (abs (- estimate true-expectation))) estimates)]
            [mean-abs-error (mean errors)])
       (if (> mean-abs-error tolerance)
-          (for-each display (list ".. failed! true expectation: "  true-expectation ", test mean: " (* (mean estimates) 1.) "\n"))
+          (for-each display (list name ".. failed! true expectation: "  true-expectation ", test mean: " (* (mean estimates) 1.) "\n"))
           (for-each display (list name " passed. true expectation: "  true-expectation ", test mean: " (* (mean estimates) 1.) "\n"))))))
 
