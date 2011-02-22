@@ -1,11 +1,11 @@
 ;;;node code
-(define a 'a)
-(define b 'b)
-(define c 'c)
-(define d 'd)
-(define e 'e)
+;; (define a 'a)
+;; (define b 'b)
+;; (define c 'c)
+;; (define d 'd)
+;; (define e 'e)
 
-(define growth-noise .7)
+(define growth-noise 0)
 (define label-noise .4)
 (define labels '(a b))
 
@@ -63,6 +63,12 @@
        (lazy-list 'node color)))))
 
 
+;;find the literal translation of a tree into code
+(define (tree->program tree)
+  (if (null? tree)
+      '()
+      (append (list 'node (list 'quote (first tree)))
+              (map tree->program (rest tree)))))
      
 
 

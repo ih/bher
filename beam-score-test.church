@@ -1,11 +1,15 @@
-(define (prototype) (node 'a (node 'b (node 'c (node 'd) (node 'd)))))
+(define (prototype) (node 'a (node 'b (node 'a (node 'b) (node 'b)))))
 
 (define (two-node) (node 'a (node 'b)))
 
 (define (gen-data model amount)
   (delete '() (repeat amount model)))
 
-(map lazy-list->all-list (gen-data two-node 5))
+
+
+(map lazy-list->all-list (map eval (map tree->program (map lazy-list->all-list (gen-data prototype 5)))))
+
+
 
 
 
