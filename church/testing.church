@@ -1,3 +1,12 @@
+(define (time-it proc . name)
+  (lambda args
+    (let ([start-time (current-time)]
+          [value (apply proc args)]
+          [end-time (current-time)])
+      (for-each display (list name " run-time:" (time-second (time-difference start-time end-time)) "\n"))
+      value)))
+
+
 (define (evaluates?-test name value)
   (begin
     (for-each display (list name " value:" value "...passed!"))))
@@ -8,6 +17,8 @@
     (if (not (equal? test-val true-val))
         (for-each display (list ".. failed! true value: "  true-val ", test value: " test-val "\n"))
         (display ".. passed.\n"))))
+
+(define timed-equal?-test (time-it equal?-test))
 
 (define (member?-test name test-val set-of-true-vals)
   (begin

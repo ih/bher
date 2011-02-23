@@ -1,0 +1,13 @@
+
+
+
+(define (fact n)
+  (cond [(= n 0) 0]
+        [(= n 1) 1]
+        [else (+ (fact (- n 1)) (fact (- n 2)))]))
+
+(define timed-fact (time-it fact "factorial"))
+
+(timed-fact 30)
+         
+      
