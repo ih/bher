@@ -80,7 +80,7 @@
                             (compile (list sexpr) '()))
                 church-main)
              (environment '(rnrs)
-                          '(pi abstract)
+                          '(abstract)
                           '(pi lazy)
                           '(util)
                           '(sym)

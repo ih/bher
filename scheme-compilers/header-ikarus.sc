@@ -20,7 +20,7 @@
  (rnrs eval)
  ;;non-standard libraries
  (pi lazy)
- (pi abstract)
+ (abstract)
  (util)
  (sym)
  (testing)

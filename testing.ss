@@ -5,7 +5,7 @@
                  (_srfi :1)
                  (_srfi :69)
                  (sym)
-                 (pi abstract)
+                 (abstract)
                  (util)
                  (church readable-scheme))
 

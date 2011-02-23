@@ -1,6 +1,6 @@
 ;;;node code
 (define growth-noise .3)
-(define label-noise 0)
+(define label-noise .2)
 (define labels '(a b))
 
 (define root '(a))

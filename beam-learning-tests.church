@@ -20,6 +20,15 @@
 (member?-test "learned-model" (lazy-list->all-list ((learn-model '((a) (a (b)))))) '((a) (a (b))))
 
 
+;;;sort-by-size-and-score tests
+(define simplest-data (lazy-list 'a))
+(define possible-programs (list '(uniform-draw (node 'a)) '(uniform-draw (node 'b)) '(uniform-draw (node 'a (node 'b)))))
+
+
+(scoring simplest-data '(node 'b) 10)
+;;(map (lambda (prog) (scoring simplest-data prog 10)) possible-programs)
+;;;test where growth noise is higher than label noise
+;; (equal?-test "sort-by-size-and-score simplest data" (sort-by-size-and-score possible-programs simplest-data) (list '(uniform-draw (node a)) '(uniform-draw (node a (node b))) '(uniform-draw (node b))))
 
 ;;(map lazy-list->all-list (map eval (map tree->program (map lazy-list->all-list (gen-data prototype 5)))))
 
