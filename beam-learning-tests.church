@@ -5,33 +5,39 @@
 (define (gen-data model amount)
   (delete '() (repeat amount model)))
 
-
-
-
 (define prototype-data (map lazy-list->all-list (gen-data prototype 5)))
-
-;;(pretty-print prototype-data)
-
 
 
 ;;;learn-model tests
-(member?-test "make-initial-sexpr evaluation" (lazy-list->all-list (eval (make-initial-sexpr (list '(a) '(a (b)))))) (list '(a) '(a (b))))
+;; (member?-test "make-initial-sexpr evaluation" (lazy-list->all-list (eval (make-initial-sexpr (list '(a) '(a (b)))))) (list '(a) '(a (b))))
 
-(member?-test "learned-model" (lazy-list->all-list ((learn-model '((a) (a (b)))))) '((a) (a (b))))
+;; (member?-test "learned-model" (lazy-list->all-list ((learn-model '((a) (a (b)))))) '((a) (a (b))))
 
 
 ;;;sort-by-size-and-score tests
 (define simplest-data (lazy-list 'a))
-(define possible-programs (map (lambda (prog) (make-program '() prog)) (list '(uniform-draw (list (node 'a))) '(uniform-draw (list (node 'b))) '(uniform-draw (list (node 'a (node 'b)))))))
+(define possible-program-sexprs  (list '(uniform-draw (list (node 'a))) '(uniform-draw (list (node 'b))) '(uniform-draw (list (node 'a (node 'b))))))
+(define possible-programs (map (lambda (prog) (make-program '() prog)) possible-program-sexprs))
 
-;;possible-programs
-;;(scoring simplest-data '(node 'b) 10)
-;;possible-programs
-;;(map (lambda (prog) (scoring simplest-data prog 10)) possible-programs)
+;;;scoring tests just to see if it runs
+;; (evaluates?-test "score a single node program" (scoring simplest-data '(node 'b) 10))
+;; (evaluates?-test "score a list of programs" (map (lambda (prog) (scoring simplest-data prog 10)) possible-program-sexprs))
+
+;;;list-sorting tests 
+;;partition test
+;; (define test-list '(1 2 3 5 6 7))
+;; (equal?-test "split with 4" (my-partition < 4 test-list) '((1 2 3) (5 6 7)))
+;; ;;my-list-sort test
+;; (equal?-test "sorting test" (my-list-sort > test-list) (reverse test-list))
+;;;combine-size-score test
+;; (define sizes '(1 2 3))
+;; (define scores '(10 20 30))
+
+;; (equal?-test "combine-size-score test" (combine-size-score sizes scores 1 .1) '(2.0 4.0 6.0))
 ;;;test where growth noise is higher than label noise
-(list-sort < '(3 6 1))
-;;(weighted-list-sort  '((1 2) (3 4) (5 6)))
-;;(equal?-test "sort-by-score-and-size simplest data" (sort-by-score-and-size possible-programs simplest-data) (list '(uniform-draw (node 'a)) '(uniform-draw (node 'a (node 'b))) '(uniform-draw (node 'b))))
+;; (equal?-test "sort-by-score-and-size simplest data, based on score only" (sort-by-score-and-size possible-programs simplest-data 0 1) (map (lambda (prog) (make-program '() prog)) (list '(uniform-draw (list (node 'a))) '(uniform-draw (list (node 'a (node 'b)))) '(uniform-draw (list (node 'b))))))
+
+(equal?-test "sort-by-score-and-size simplest data, based on weight only" (sort-by-score-and-size possible-programs simplest-data 1 0) (map (lambda (prog) (make-program '() prog)) (list '(uniform-draw (list (node 'a))) '(uniform-draw (list (node 'b))) '(uniform-draw (list (node 'a (node 'b)))))))
 
 ;;(map lazy-list->all-list (map eval (map tree->program (map lazy-list->all-list (gen-data prototype 5)))))
 
