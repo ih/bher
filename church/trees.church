@@ -1,5 +1,5 @@
 ;;;node code
-(define growth-noise .3)
+(define growth-noise 1)
 (define label-noise .2)
 (define labels '(a b))
 
