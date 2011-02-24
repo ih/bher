@@ -10,6 +10,7 @@
 
  (import (rnrs)
          (church readable-scheme)
+         (scheme-mem)
          (_srfi :1))
  
 ;;;some syntax utils
@@ -170,8 +171,17 @@
  ;;load sugar.
  (define (seq-with-load? expr) (and (list? expr)
                                     (fold (lambda (subexpr accum) (or (tagged-list? subexpr 'load) accum)) false expr)))
- (define (expand-loads expr)
-   (apply append (map (lambda (subexpr) (if (load? subexpr) (file->list (open-included-file (second subexpr))) (list subexpr))) expr)))
+
+;;; memoized to speed up scoring
+ ;; (define expand-loads
+ ;;   (scheme-mem (lambda (expr)
+ ;;     (apply append (map (lambda (subexpr) (if (load? subexpr) (file->list (open-included-file (second subexpr))) (list subexpr))) expr)))))
+
+  (define (expand-loads expr)
+     (apply append (map (lambda (subexpr) (if (load? subexpr) (file->list (open-included-file (second subexpr))) (list subexpr))) expr)))
+
+
+ 
  (define (file->list filehandle)
    (let ((next (read filehandle)))
      (if (eof-object? next) '() (cons next (file->list filehandle)))))
