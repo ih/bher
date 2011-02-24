@@ -33,15 +33,14 @@
 ;; (define (beam-learn-search-compressions data beam-size program)
 ;;   (iterated-compressions (lambda (progs) (best-n beam-size (unique-programs progs))) program))
 
-;; (define (best-n n programs)
-;;   (max-take (sort-by-score-and-size programs) n))
-
+(define (best-n n programs data size-weight score-weight)
+  (max-take (sort-by-score-and-size programs data size-weight score-weight) n))
 
 
 (define (sort-by-score-and-size programs data size-weight score-weight)
   (let* ([program-sizes (map (compose size program->sexpr) programs)]
          ;[program-scores (make-list (length programs) 0)]
-         [program-scores (map (compose (lambda (prog) (scoring data prog 10)) program->sexpr) programs)]
+         [program-scores (map (compose (lambda (prog) (scoring prog data 10)) program->sexpr) programs)]
          [total-weight (combine-size-score program-sizes program-scores size-weight score-weight)]
          [db (pretty-print (zip programs program-sizes program-scores))]
          [programs-with-weights (zip programs total-weight)]
@@ -79,7 +78,7 @@
   (lambda (x) (f (g x))))
 
 (define scoring  
-  (lambda (data prog popsize) ;;scorer
+  (lambda (prog data popsize) ;;scorer
     (let* ((samples (smc-core (map list (iota (+ 1 (lazy-list-size  data)))) popsize 0
                                    (lambda (depth) (lambda () (let ((s (eval prog)))
                                                                 (pair (lazy-equal? s data depth)
