@@ -1,14 +1,20 @@
-;;;quoted expressions
-(define qexpr ''jkljx)
-(equal?-test "quoted? test" (quoted? qexpr) #t)
-;;;symbol test
-(define timed-node-eval (time-it (lambda (sexpr) (node-eval sexpr '())) "node-eval"))
-(define timed-eval (time-it eval "eval"))
-(define (eval-test name sexpr)
-  (equal?-test name (timed-node-eval sexpr) (timed-eval sexpr)))
+(get-current-environment)
 
-(eval-test "symbol 'x" ''x)
+;; (define timed-node-eval (time-it (lambda (sexpr) (node-eval sexpr '())) "node-eval"))
+;; (define timed-eval (time-it eval "eval"))
+;; (define (eval-test name sexpr)
+;;   (equal?-test name (timed-node-eval sexpr) (timed-eval sexpr)))
 
+;; ;;;quoted expressions
+;; (define qexpr ''jkljx)
+;; (equal?-test "quoted? test" (quoted? qexpr) #t)
 
-         
+;; (eval-test "symbol 'x" ''x)
+
+;; ;;;application expressions
+;; (define nodea '(node 'a))
+;; (equal?-test "application? test" (application? nodea) #t)
+
+;; (eval-test "single node" nodea)
+
       
