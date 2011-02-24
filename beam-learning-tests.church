@@ -43,8 +43,25 @@
 ;; (equal?-test "sort-by-score-and-size simplest data, based on weight only" (timed-sort-by-score-and-size possible-programs simplest-data 1 0) (map (lambda (prog) (make-program '() prog)) (list '(uniform-draw (list (node 'a))) '(uniform-draw (list (node 'b))) '(uniform-draw (list (node 'a (node 'b)))))))
 
 ;;;best-n tests
-(define timed-best-n (time-it best-n "best-n"))
-(equal?-test "best-n by score only" (timed-best-n 2 possible-programs simplest-data 0 1) (map (lambda (prog) (make-program '() prog)) (list '(uniform-draw (list (node 'a))) '(uniform-draw (list (node 'a (node 'b)))))))
+;; (define timed-best-n (time-it best-n "best-n"))
+;; (equal?-test "best-n by score only" (timed-best-n 2 possible-programs simplest-data 0 1) (map (lambda (prog) (make-program '() prog)) (list '(uniform-draw (list (node 'a))) '(uniform-draw (list (node 'a (node 'b)))))))
+
+;;;church-iterated-compressions test
+(define timed-iterated-compressions (time-it my-iterated-compressions "my-iterated-compressions"))
+
+(define compressible-program (make-program '() '(node 'a (node 'a (node 'a (node 'a))))))
+
+;; (evaluates?-test "my-iterated-compressions test" (my-iterated-compressions (lambda (x) x) compressible-program))
+
+;;;beam-learn-search-compressions test
+(define timed-beam-learn-search-compressions (time-it beam-learn-search-compressions "beam-learn-search"))
+;; (define simplest-program (make-program '() '(uniform-draw (list (node 'a)))))
+
+;;(evaluates?-test "beam-learn-search-compressions simplest-data" (timed-beam-learn-search-compressions simplest-data 10 simplest-program 0 1))
+
+(define aaaadata (list->lazy-list '(a (a (a (a))))))
+
+(evaluates?-test "beam-learn-search-compressions 4a data" (timed-beam-learn-search-compressions aaaadata 5 compressible-program 0 1))
 
 
 
@@ -52,3 +69,5 @@
 
 
 
+
+(exit)

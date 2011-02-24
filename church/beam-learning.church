@@ -30,8 +30,14 @@
 ;;              (beam-learn-search-compressions data beam-size (make-program '() sexpr))))))
 
 
-;; (define (beam-learn-search-compressions data beam-size program)
-;;   (iterated-compressions (lambda (progs) (best-n beam-size (unique-programs progs))) program))
+(define (beam-learn-search-compressions data beam-size program size-weight score-weight)
+  (my-iterated-compressions (lambda (progs) (best-n beam-size (unique-programs progs) data size-weight score-weight)) program))
+
+(define (my-iterated-compressions cfilter program)
+  (let ([compressed-programs (cfilter (compressions program))])
+    (append compressed-programs
+            (apply append (map (lambda (prog) (my-iterated-compressions cfilter prog)) compressed-programs)))))
+
 
 (define (best-n n programs data size-weight score-weight)
   (max-take (sort-by-score-and-size programs data size-weight score-weight) n))
