@@ -1,0 +1,23 @@
+(define (node-eval exp env)
+  ((analyze exp) env))
+
+(define (analyze exp)
+  (cond [(quoted? exp) (analyze-quoted exp)]
+        [else (lambda (env) "analysis lost")]))
+;;;quoted 
+(define (quoted? exp)
+  (tagged-list? exp 'quote))
+
+(define (analyze-quoted exp)
+  (let ((qval (text-of-quotation exp)))
+    (lambda (env) qval)))
+
+(define text-of-quotation second)
+
+(define (tagged-list? exp tag)
+  (if (pair? exp)
+      (eq? (first exp) tag)
+      #f))
+
+
+

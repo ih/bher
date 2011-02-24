@@ -1,13 +1,14 @@
+;;;quoted expressions
+(define qexpr ''jkljx)
+(equal?-test "quoted? test" (quoted? qexpr) #t)
+;;;symbol test
+(define timed-node-eval (time-it (lambda (sexpr) (node-eval sexpr '())) "node-eval"))
+(define timed-eval (time-it eval "eval"))
+(define (eval-test name sexpr)
+  (equal?-test name (timed-node-eval sexpr) (timed-eval sexpr)))
+
+(eval-test "symbol 'x" ''x)
 
 
-
-(define (fact n)
-  (cond [(= n 0) 0]
-        [(= n 1) 1]
-        [else (+ (fact (- n 1)) (fact (- n 2)))]))
-
-(define timed-fact (time-it fact "factorial"))
-
-(timed-fact 30)
          
       

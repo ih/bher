@@ -30,6 +30,7 @@
                             (load "mcmc-preamble.church")
                             (load "trees.church")
                             (load "testing.church")
+                            (load "node-eval.church")
                             (load "beam-learning.church")
                             ,@top-list))
           (ds-sexpr (de-sugar-all church-sexpr))
